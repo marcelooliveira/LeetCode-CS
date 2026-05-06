@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Visualizacao: 0209 - Minimum Size Subarray Sum</title>
+	<style>
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #f97316 0%, #0d9488 100%);
+			padding: 20px;
+			min-height: 100vh;
+		}
+
+		.container {
+			max-width: 1100px;
+			margin: 0 auto;
+			background: white;
+			border-radius: 20px;
+			padding: 30px;
+			box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+		}
+
+		h1 { color: #f97316; text-align: center; margin-bottom: 8px; font-size: 2.1em; }
+		.subtitle { text-align: center; color: #666; margin-bottom: 28px; font-size: 1.05em; }
+
+		/* ─── Explanation ─── */
+		.explanation {
+			background: #fff7ed;
+			padding: 20px;
+			border-radius: 10px;
+			margin-bottom: 28px;
+			border-left: 5px solid #f97316;
+		}
+		.explanation h2 { color: #f97316; margin-bottom: 12px; }
+		.explanation p  { line-height: 1.8; color: #333; margin-bottom: 8px; }
+		.explanation code {
+			background: #ffedd5;
+			padding: 2px 6px;
+			border-radius: 3px;
+			font-family: 'Courier New', monospace;
+			color: #c2410c;
+		}
+
+		/* ─── Controls ─── */
+		.controls {
+			display: flex;
+			gap: 12px;
+			margin-bottom: 28px;
+			flex-wrap: wrap;
+			justify-content: center;
+			align-items: center;
+		}
+		button {
+			background: #f97316;
+			color: white;
+			border: none;
+			padding: 11px 20px;
+			border-radius: 8px;
+			cursor: pointer;
+			font-size: 15px;
+			font-weight: 600;
+			transition: all 0.25s;
+			box-shadow: 0 4px 12px rgba(249,115,22,0.4);
+		}
+		button:hover { background: #ea6b0a; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(249,115,22,0.55); }
+		button:disabled { background: #d1d5db; cursor: not-allowed; transform: none; box-shadow: none; }
+		button#stepBtn { background: #0d9488; box-shadow: 0 4px 12px rgba(13,148,136,0.4); }
+		button#stepBtn:hover { background: #0b7a70; }
+		button#stepBtn:disabled { background: #d1d5db; box-shadow: none; }
+
+		.speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+		input[type="range"] { width: 130px; }
+
+		/* ─── Visualization area ─── */
+		.visualization {
+			background: #fafafa;
+			padding: 24px 20px 20px;
+			border-radius: 12px;
+			margin-bottom: 22px;
+			border: 2px solid #fed7aa;
+		}
+		.visualization h3 { text-align: center; color: #f97316; margin-bottom: 18px; }
+
+		/* Legend */
+		.legend {
+			display: flex;
+			gap: 16px;
+			flex-wrap: wrap;
+			justify-content: center;
+			margin-bottom: 16px;
+		}
+		.legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+		.legend-box { width: 18px; height: 18px; border-radius: 4px; border: 2px solid transparent; flex-shrink: 0; }
+
+		/* Progress */
+		.progress-bar { width: 100%; height: 22px; background: #e5e7eb; border-radius: 11px; overflow: hidden; margin-bottom: 18px; }
+		.progress-fill {
+			height: 100%;
+			background: linear-gradient(90deg, #f97316 0%, #0d9488 100%);
+			transition: width 0.3s;
+			display: flex; align-items: center; justify-content: center;
+			color: white; font-weight: bold; font-size: 12px;
+		}
+
+		/* ─── Array ─── */
+		.array-wrapper {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 0;
+		}
+
+		.array-row {
+			display: flex;
+			gap: 8px;
+			justify-content: center;
+		}
+
+		.array-col {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 4px;
+		}
+
+		/* Pointer labels above */
+		.ptr-label-top {
+			height: 22px;
+			font-size: 12px;
+			font-weight: 700;
+			text-align: center;
+			width: 64px;
+			line-height: 22px;
+			border-radius: 4px;
+			transition: all 0.25s;
+			opacity: 0;
+		}
+		.ptr-label-top.right-ptr {
+			background: #fef08a;
+			color: #78350f;
+			opacity: 1;
+		}
+		.ptr-label-top.left-ptr {
+			background: #fed7aa;
+			color: #9a3412;
+			opacity: 1;
+		}
+		.ptr-label-top.both-ptr {
+			background: linear-gradient(90deg, #fed7aa 0%, #fef08a 100%);
+			color: #7c2d12;
+			opacity: 1;
+			font-size: 10px;
+		}
+
+		/* Element box */
+		.elem-box {
+			width: 64px;
+			height: 64px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			border: 2px solid #e5e7eb;
+			border-radius: 10px;
+			font-weight: 700;
+			font-size: 22px;
+			transition: all 0.25s;
+			background: white;
+			position: relative;
+			gap: 2px;
+		}
+		.elem-box .elem-idx {
+			font-size: 10px;
+			color: #9ca3af;
+			font-weight: normal;
+		}
+
+		/* States */
+		.elem-box.unvisited  { background: #f9fafb; border-color: #e5e7eb; color: #d1d5db; }
+		.elem-box.unvisited .elem-idx { color: #e5e7eb; }
+
+		.elem-box.past        { background: #f3f4f6; border-color: #d1d5db; color: #9ca3af; }
+		.elem-box.past .elem-idx { color: #d1d5db; }
+
+		.elem-box.in-window   { background: #d1fae5; border-color: #10b981; color: #065f46; }
+		.elem-box.in-window .elem-idx { color: #34d399; }
+
+		.elem-box.right-current {
+			background: #fef08a; border-color: #eab308;
+			color: #78350f;
+			transform: scale(1.12);
+			box-shadow: 0 5px 16px rgba(234,179,8,0.55);
+			z-index: 5; position: relative;
+		}
+		.elem-box.right-current .elem-idx { color: #b45309; }
+
+		.elem-box.shrink-left {
+			background: #fee2e2; border-color: #ef4444;
+			color: #7f1d1d;
+			transform: scale(1.08);
+			box-shadow: 0 4px 12px rgba(239,68,68,0.4);
+		}
+		.elem-box.shrink-left .elem-idx { color: #f87171; }
+
+		.elem-box.best-window { background: #e0f2fe; border-color: #0ea5e9; color: #0c4a6e; }
+		.elem-box.best-window .elem-idx { color: #38bdf8; }
+
+		/* Ptr arrow below box */
+		.ptr-label-bot {
+			height: 20px;
+			font-size: 11px;
+			font-weight: 700;
+			text-align: center;
+			width: 64px;
+			line-height: 20px;
+			opacity: 0;
+			transition: opacity 0.2s;
+		}
+		.ptr-label-bot.visible { opacity: 1; }
+
+		/* ─── Window info ─── */
+		.window-info {
+			text-align: center;
+			margin-top: 18px;
+			padding: 12px;
+			background: white;
+			border-radius: 8px;
+			border: 1px solid #fed7aa;
+			font-size: 14px;
+			color: #374151;
+		}
+		.window-nums {
+			font-family: 'Courier New', monospace;
+			font-size: 22px;
+			font-weight: bold;
+			color: #f97316;
+			letter-spacing: 4px;
+			margin-top: 6px;
+		}
+
+		/* ─── Sum bar ─── */
+		.sum-bar-section {
+			margin-top: 14px;
+			padding: 14px 16px;
+			background: white;
+			border-radius: 8px;
+			border: 1px solid #e5e7eb;
+		}
+		.sum-bar-label {
+			font-size: 13px;
+			color: #374151;
+			margin-bottom: 8px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+		.sum-bar-track {
+			width: 100%;
+			height: 28px;
+			background: #f3f4f6;
+			border-radius: 14px;
+			overflow: visible;
+			position: relative;
+		}
+		.sum-bar-fill {
+			height: 100%;
+			border-radius: 14px;
+			background: linear-gradient(90deg, #10b981 0%, #f97316 100%);
+			transition: width 0.3s;
+			max-width: 100%;
+			display: flex;
+			align-items: center;
+			justify-content: flex-end;
+			padding-right: 8px;
+			color: white;
+			font-weight: bold;
+			font-size: 13px;
+		}
+		.sum-bar-fill.reached {
+			background: linear-gradient(90deg, #f97316 0%, #ef4444 100%);
+		}
+		.target-line {
+			position: absolute;
+			top: -6px;
+			bottom: -6px;
+			width: 3px;
+			background: #7c3aed;
+			border-radius: 2px;
+			transition: left 0.3s;
+		}
+		.target-label {
+			position: absolute;
+			top: -22px;
+			font-size: 11px;
+			font-weight: 700;
+			color: #7c3aed;
+			transform: translateX(-50%);
+			white-space: nowrap;
+		}
+
+		/* ─── Event log ─── */
+		.event-log {
+			margin-top: 14px;
+			padding: 12px 16px;
+			background: #fffbeb;
+			border-radius: 8px;
+			border-left: 4px solid #f97316;
+			font-size: 14px;
+			color: #78350f;
+			min-height: 46px;
+			line-height: 1.55;
+		}
+
+		/* ─── Stats ─── */
+		.stats {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+			gap: 14px;
+			margin-bottom: 22px;
+		}
+		.stat-card {
+			background: linear-gradient(135deg, #f97316 0%, #0d9488 100%);
+			color: white;
+			padding: 16px;
+			border-radius: 12px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		}
+		.stat-label { font-size: 12px; opacity: 0.85; margin-bottom: 5px; line-height: 1.3; }
+		.stat-value { font-size: 28px; font-weight: bold; font-family: 'Courier New', monospace; }
+
+		/* ─── Algorithm steps ─── */
+		.algorithm-steps { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 22px; }
+		.algorithm-steps h3 { color: #f97316; margin-bottom: 14px; }
+		.step {
+			padding: 12px 15px;
+			margin-bottom: 8px;
+			border-radius: 8px;
+			background: white;
+			border-left: 4px solid #e5e7eb;
+			transition: all 0.3s;
+			font-size: 14px;
+			line-height: 1.55;
+		}
+		.step.active { border-left-color: #f97316; background: #fff7ed; transform: translateX(5px); }
+		.step-number {
+			display: inline-block;
+			width: 26px; height: 26px;
+			background: #f97316;
+			color: white;
+			border-radius: 50%;
+			text-align: center;
+			line-height: 26px;
+			margin-right: 10px;
+			font-weight: bold;
+			font-size: 13px;
+		}
+
+		/* ─── Complexity ─── */
+		.complexity-info { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+		.complexity-card {
+			background: #fff7ed;
+			padding: 18px;
+			border-radius: 10px;
+			border-left: 5px solid #f97316;
+		}
+		.complexity-card h3 { color: #f97316; margin-bottom: 8px; }
+		.complexity-card p { line-height: 1.7; color: #374151; }
+
+		/* ─── Code ─── */
+		.code-section { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px; overflow-x: auto; }
+		.code-section h3 { color: #d4d4d4; margin-bottom: 14px; }
+		.code-section pre { font-family: 'Courier New', monospace; line-height: 1.75; font-size: 14px; }
+
+		@media (max-width: 700px) {
+			h1 { font-size: 1.5em; }
+			.complexity-info { grid-template-columns: 1fr; }
+			.elem-box { width: 52px; height: 52px; font-size: 18px; }
+			.ptr-label-top, .ptr-label-bot { width: 52px; }
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+
+	<h1>📏 Minimum Size Subarray Sum</h1>
+	<p class="subtitle">Sliding Window Dinamica &mdash; LeetCode Problema 0209</p>
+
+	<!-- Explanation -->
+	<div class="explanation">
+		<h2>📚 Qual e o Problema?</h2>
+		<p>
+			Dado um array de inteiros positivos <code>nums</code> e um inteiro positivo <code>target</code>,
+			retorne o <strong>menor comprimento</strong> de um subarray contíguo cuja soma seja
+			<strong>&ge; target</strong>. Retorne <code>0</code> se nenhum existir.
+		</p>
+		<p>
+			Este visualizador usa o caso de teste <code>MinSubArrayLen_1</code>:
+			<br>
+			<strong>target = 7</strong> &nbsp;|&nbsp;
+			<strong>nums = [2, 3, 1, 2, 4, 3]</strong>
+			&nbsp;&rarr;&nbsp; <strong>Resultado esperado: 2</strong>
+			&nbsp;(subarray <code>[4, 3]</code>)
+		</p>
+		<p>
+			A solucao usa <strong>Sliding Window Dinâmica</strong>: o ponteiro <em>right</em> expande a janela
+			somando elementos; assim que <code>sum &ge; target</code>, o ponteiro <em>left</em> encolhe a janela
+			removendo elementos pela esquerda enquanto a condicao ainda for satisfeita, registrando
+			o menor comprimento visto.
+		</p>
+	</div>
+
+	<!-- Controls -->
+	<div class="controls">
+		<button id="startBtn" onclick="startVisualization()">&#9654;&#65039; Iniciar</button>
+		<button id="pauseBtn" onclick="pauseVisualization()" disabled>&#9208;&#65039; Pausar</button>
+		<button id="stepBtn"  onclick="doStep()">&#9197;&#65039; Passo</button>
+		<button id="resetBtn" onclick="resetVisualization()">&#128260; Resetar</button>
+		<div class="speed-control">
+			<label for="speedRange">Velocidade:</label>
+			<input type="range" id="speedRange" min="200" max="2000" value="900" step="100">
+			<span id="speedValue">900ms</span>
+		</div>
+	</div>
+
+	<!-- Visualization -->
+	<div class="visualization">
+		<h3>Array &mdash; target = <strong style="color:#7c3aed;">7</strong> &nbsp;|&nbsp; nums = [2, 3, 1, 2, 4, 3]</h3>
+
+		<!-- Legend -->
+		<div class="legend">
+			<div class="legend-item">
+				<div class="legend-box" style="background:#fef08a;border-color:#eab308;"></div>
+				Ponteiro direito (right / i) &mdash; expandindo
+			</div>
+			<div class="legend-item">
+				<div class="legend-box" style="background:#d1fae5;border-color:#10b981;"></div>
+				Dentro da janela atual
+			</div>
+			<div class="legend-item">
+				<div class="legend-box" style="background:#fee2e2;border-color:#ef4444;"></div>
+				Ponteiro esquerdo (left) &mdash; prestes a sair
+			</div>
+			<div class="legend-item">
+				<div class="legend-box" style="background:#e0f2fe;border-color:#0ea5e9;"></div>
+				Melhor janela encontrada
+			</div>
+			<div class="legend-item">
+				<div class="legend-box" style="background:#f3f4f6;border-color:#d1d5db;"></div>
+				Fora da janela (ja processado)
+			</div>
+		</div>
+
+		<!-- Progress bar -->
+		<div class="progress-bar">
+			<div class="progress-fill" id="progressBar" style="width:0%">0%</div>
+		</div>
+
+		<!-- Array columns (ptr above | box | ptr below) -->
+		<div class="array-wrapper">
+			<div class="array-row" id="arrayRow"></div>
+		</div>
+
+		<!-- Window info -->
+		<div class="window-info">
+			<div>
+				Janela atual: [<strong id="winLeft">—</strong>,&nbsp;<strong id="winRight">—</strong>]
+				&nbsp;|&nbsp; Tamanho: <strong id="winSize">—</strong>
+				&nbsp;|&nbsp; Soma: <strong id="winSum">0</strong>
+			</div>
+			<div class="window-nums" id="windowNums">—</div>
+		</div>
+
+		<!-- Sum bar -->
+		<div class="sum-bar-section">
+			<div class="sum-bar-label">
+				<span>Progresso da Soma em direcao ao target (<span style="color:#7c3aed;">7</span>)</span>
+				<span><strong id="sumBarText">sum = 0</strong></span>
+			</div>
+			<div class="sum-bar-track" id="sumTrack">
+				<div class="sum-bar-fill" id="sumBarFill" style="width:0%"></div>
+				<div class="target-line" id="targetLine" style="left:100%">
+					<span class="target-label">target=7</span>
+				</div>
+			</div>
+		</div>
+
+		<!-- Event log -->
+		<div class="event-log" id="eventLog">
+			Clique em &ldquo;Iniciar&rdquo; ou &ldquo;Passo&rdquo; para comecar a visualizacao&hellip;
+		</div>
+	</div>
+
+	<!-- Stats -->
+	<div class="stats">
+		<div class="stat-card">
+			<div class="stat-label">Ponteiro Direito (right / i)</div>
+			<div class="stat-value" id="statRight">—</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Ponteiro Esquerdo (left)</div>
+			<div class="stat-value" id="statLeft">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Soma da Janela (sum)</div>
+			<div class="stat-value" id="statSum">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Menor Comprimento (result)</div>
+			<div class="stat-value" id="statResult">∞</div>
+		</div>
+	</div>
+
+	<!-- Algorithm steps -->
+	<div class="algorithm-steps">
+		<h3>🔍 Passos do Algoritmo (execucao atual)</h3>
+		<div class="step" id="step1">
+			<span class="step-number">1</span>
+			<strong>Inicializacao:</strong> <code>result = int.MaxValue</code>, <code>sum = 0</code>, <code>left = 0</code>
+		</div>
+		<div class="step" id="step2">
+			<span class="step-number">2</span>
+			<strong>Expandir:</strong> <code>sum += nums[right]</code>
+			&mdash; aumenta a janela pela direita
+		</div>
+		<div class="step" id="step3">
+			<span class="step-number">3</span>
+			<strong>Verificar:</strong> <code>while (sum &ge; target)</code>
+			&mdash; a soma atingiu o alvo?
+		</div>
+		<div class="step" id="step4">
+			<span class="step-number">4</span>
+			<strong>Registrar:</strong> <code>result = Math.Min(result, right &minus; left + 1)</code>
+			&mdash; esta janela e menor que o melhor atual?
+		</div>
+		<div class="step" id="step5">
+			<span class="step-number">5</span>
+			<strong>Encolher:</strong> <code>sum -= nums[left++]</code>
+			&mdash; remove o elemento mais a esquerda e volta ao passo 3
+		</div>
+		<div class="step" id="step6">
+			<span class="step-number">6</span>
+			<strong>&#9989; Resultado:</strong> <code>return result == int.MaxValue ? 0 : result</code>
+		</div>
+	</div>
+
+	<!-- Complexity -->
+	<div class="complexity-info">
+		<div class="complexity-card">
+			<h3>&#9201;&#65039; Complexidade de Tempo</h3>
+			<p><strong>O(n)</strong> &mdash; Linear</p>
+			<p>
+				Cada elemento e adicionado pela direita <em>exatamente uma vez</em> e
+				removido pela esquerda <em>no maximo uma vez</em>. Total: at&eacute; 2n operacoes.
+			</p>
+		</div>
+		<div class="complexity-card">
+			<h3>&#128190; Complexidade de Espaco</h3>
+			<p><strong>O(1)</strong> &mdash; Constante</p>
+			<p>
+				Apenas tres variaveis extra: <code>result</code>, <code>sum</code> e <code>left</code>.
+				Independente do tamanho do array.
+			</p>
+		</div>
+	</div>
+
+	<!-- Code -->
+	<div class="code-section">
+		<h3>&#128187; Implementacao em C#</h3>
+		<pre>
+<span style="color:#569cd6;">public int</span> <span style="color:#dcdcaa;">MinSubArrayLen</span>(<span style="color:#569cd6;">int</span> s, <span style="color:#569cd6;">int</span>[] nums)
+{
+    <span style="color:#569cd6;">var</span> result = <span style="color:#569cd6;">int</span>.MaxValue;
+    <span style="color:#569cd6;">var</span> sum    = <span style="color:#b5cea8;">0</span>;
+    <span style="color:#569cd6;">var</span> left   = <span style="color:#b5cea8;">0</span>;
+
+    <span style="color:#c586c0;">for</span> (<span style="color:#569cd6;">int</span> i = <span style="color:#b5cea8;">0</span>; i &lt; nums.Length; i++)
+    {
+        sum += nums[i];                      <span style="color:#6a9955;">// expande: inclui o elemento direito</span>
+
+        <span style="color:#c586c0;">while</span> (sum &gt;= s)                       <span style="color:#6a9955;">// atingiu o alvo?</span>
+        {
+            result = Math.<span style="color:#dcdcaa;">Min</span>(result, i - left + <span style="color:#b5cea8;">1</span>);  <span style="color:#6a9955;">// registra menor comprimento</span>
+            sum -= nums[left++];             <span style="color:#6a9955;">// encolhe: remove o elemento esquerdo</span>
+        }
+    }
+
+    <span style="color:#c586c0;">return</span> result == <span style="color:#569cd6;">int</span>.MaxValue ? <span style="color:#b5cea8;">0</span> : result;
+}</pre>
+	</div>
+
+</div><!-- /container -->
+
+<script>
+// ─── Data ────────────────────────────────────────────────────────────────────
+const NUMS   = [2, 3, 1, 2, 4, 3];
+const TARGET = 7;
+
+// ─── Pre-compute all steps ───────────────────────────────────────────────────
+// Each step = snapshot of state + description of what just happened.
+// step.phase: 'init' | 'expand' | 'check' | 'record' | 'shrink' | 'done'
+// step.left, step.right, step.sum, step.result (Infinity = int.MaxValue)
+// step.bestStart, step.bestEnd
+// step.shrinkingLeft: index being removed (for shrink phase)
+
+function buildSteps() {
+	const steps = [];
+	let left  = 0;
+	let sum   = 0;
+	let res   = Infinity;
+	let bestStart = -1, bestEnd = -1;
+
+	// Initial state
+	steps.push({
+		phase: 'init', left, right: -1, sum, result: res,
+		bestStart, bestEnd, shrinkingLeft: -1,
+		event: 'Inicializacao: result = ∞, sum = 0, left = 0. Pronto para comecar.'
+	});
+
+	for (let i = 0; i < NUMS.length; i++) {
+		// Expand
+		sum += NUMS[i];
+		steps.push({
+			phase: 'expand', left, right: i, sum, result: res,
+			bestStart, bestEnd, shrinkingLeft: -1,
+			event: `Expandir (right=${i}): sum += nums[${i}]=${NUMS[i]} → sum = ${sum}.` +
+			       (sum >= TARGET
+			         ? ` sum (${sum}) ≥ target (${TARGET})! Entrar no while para encolher.`
+			         : ` sum (${sum}) < target (${TARGET}). Continuar expandindo.`)
+		});
+
+		// While loop
+		while (sum >= TARGET) {
+			const winSize = i - left + 1;
+			const isNew   = winSize < res;
+			res           = Math.min(res, winSize);
+			if (isNew) { bestStart = left; bestEnd = i; }
+
+			// Record step
+			steps.push({
+				phase: 'record', left, right: i, sum, result: res,
+				bestStart, bestEnd, shrinkingLeft: -1,
+				event: `Registrar: janela [${left}, ${i}] tem tamanho ${winSize}.` +
+				       (isNew
+				         ? ` Novo minimo! result = ${res}.`
+				         : ` result = min(${res + (isNew ? 0 : winSize === res ? 0 : 0)}, ${winSize}) = ${res}. Sem melhora.`)
+			});
+
+			// Shrink step (show which left is being removed)
+			const removedVal = NUMS[left];
+			const prevLeft   = left;
+			sum  -= removedVal;
+			left += 1;
+
+			steps.push({
+				phase: 'shrink', left: prevLeft, right: i, sum, result: res,
+				bestStart, bestEnd, shrinkingLeft: prevLeft,
+				event: `Encolher: remover nums[${prevLeft}]=${removedVal} da esquerda → sum = ${sum}, left = ${left}.` +
+				       (sum >= TARGET
+				         ? ` sum (${sum}) ≥ target (${TARGET}). Continuar encolhendo.`
+				         : ` sum (${sum}) < target (${TARGET}). Sair do while.`)
+			});
+		}
+	}
+
+	// Done
+	steps.push({
+		phase: 'done', left, right: NUMS.length - 1, sum, result: res,
+		bestStart, bestEnd, shrinkingLeft: -1,
+		event: `✅ Concluido! result = ${res === Infinity ? 0 : res}. ` +
+		       (bestStart >= 0
+		         ? `Menor subarray: [${NUMS.slice(bestStart, bestEnd + 1).join(', ')}] (indices ${bestStart}–${bestEnd}).`
+		         : 'Nenhum subarray satisfaz a condicao.')
+	});
+
+	return steps;
+}
+
+const STEPS = buildSteps();
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let stepIdx   = 0;
+let isRunning = false;
+let intervalId = null;
+
+// ─── Build DOM ───────────────────────────────────────────────────────────────
+function buildArrayDOM() {
+	const row = document.getElementById('arrayRow');
+	row.innerHTML = '';
+	NUMS.forEach((val, idx) => {
+		const col = document.createElement('div');
+		col.className = 'array-col';
+
+		// Top pointer label
+		const topLbl = document.createElement('div');
+		topLbl.className = 'ptr-label-top';
+		topLbl.id = `top-${idx}`;
+		topLbl.textContent = '';
+
+		// Element box
+		const box = document.createElement('div');
+		box.className = 'elem-box unvisited';
+		box.id = `elem-${idx}`;
+		box.innerHTML = `<span class="elem-val">${val}</span><span class="elem-idx">[${idx}]</span>`;
+
+		col.appendChild(topLbl);
+		col.appendChild(box);
+		row.appendChild(col);
+	});
+}
+
+// ─── Render a step ───────────────────────────────────────────────────────────
+function renderStep(s) {
+	// Determine left boundary for display
+	// After a shrink step, left has already advanced; display old left as shrinkingLeft
+	const displayLeft = (s.phase === 'shrink') ? s.shrinkingLeft : s.left;
+
+	// Colour each box
+	NUMS.forEach((_, idx) => {
+		const box    = document.getElementById(`elem-${idx}`);
+		const topLbl = document.getElementById(`top-${idx}`);
+
+		box.className   = 'elem-box';
+		topLbl.className = 'ptr-label-top';
+		topLbl.textContent = '';
+
+		if (s.phase === 'done') {
+			// Highlight best window
+			if (s.bestStart >= 0 && idx >= s.bestStart && idx <= s.bestEnd)
+				box.classList.add('best-window');
+			else
+				box.classList.add('past');
+			return;
+		}
+
+		if (s.right < 0 || idx > s.right) {
+			box.classList.add('unvisited');
+			return;
+		}
+
+		const isLeft  = (idx === displayLeft);
+		const isRight = (idx === s.right);
+		const inWin   = (idx >= s.left && idx <= s.right);
+
+		if (s.phase === 'shrink' && isLeft) {
+			box.classList.add('shrink-left');
+		} else if (isRight && isLeft) {
+			box.classList.add('right-current'); // both on same cell
+		} else if (isRight) {
+			box.classList.add('right-current');
+		} else if (inWin) {
+			box.classList.add('in-window');
+		} else {
+			box.classList.add('past');
+		}
+
+		// Pointer labels
+		const isActualLeft = (idx === s.left);
+		const showRight = isRight;
+		const showLeft  = isActualLeft && (s.phase !== 'init');
+
+		if (showRight && showLeft && s.right === s.left) {
+			topLbl.classList.add('both-ptr');
+			topLbl.textContent = 'L / R';
+		} else if (showRight) {
+			topLbl.classList.add('right-ptr');
+			topLbl.textContent = 'right';
+		} else if (showLeft) {
+			topLbl.classList.add('left-ptr');
+			topLbl.textContent = 'left';
+		}
+	});
+
+	// Window info
+	if (s.phase === 'init' || s.right < 0) {
+		document.getElementById('winLeft').textContent  = '—';
+		document.getElementById('winRight').textContent = '—';
+		document.getElementById('winSize').textContent  = '—';
+		document.getElementById('winSum').textContent   = '0';
+		document.getElementById('windowNums').textContent = '—';
+	} else if (s.phase === 'done') {
+		const ws = s.bestStart >= 0 ? NUMS.slice(s.bestStart, s.bestEnd + 1) : [];
+		document.getElementById('winLeft').textContent  = s.bestStart >= 0 ? s.bestStart : '—';
+		document.getElementById('winRight').textContent = s.bestEnd   >= 0 ? s.bestEnd   : '—';
+		document.getElementById('winSize').textContent  = ws.length || '—';
+		document.getElementById('winSum').textContent   = ws.reduce((a, b) => a + b, 0) || '—';
+		document.getElementById('windowNums').textContent = ws.length ? `[${ws.join(', ')}]` : '—';
+	} else {
+		const wl = s.left;
+		const wr = s.right;
+		const ws = NUMS.slice(wl, wr + 1);
+		document.getElementById('winLeft').textContent  = wl;
+		document.getElementById('winRight').textContent = wr;
+		document.getElementById('winSize').textContent  = ws.length;
+		document.getElementById('winSum').textContent   = s.sum;
+		document.getElementById('windowNums').textContent = `[${ws.join(', ')}]`;
+	}
+
+	// Sum bar
+	const maxVal = Math.max(...NUMS) * 2;
+	const pctTarget = Math.min((TARGET / maxVal) * 100, 100);
+	document.getElementById('targetLine').style.left = pctTarget + '%';
+
+	const displaySum = s.phase === 'done' ? 0 : s.sum;
+	const pctSum = Math.min((displaySum / maxVal) * 100, 100);
+	const fill = document.getElementById('sumBarFill');
+	fill.style.width = pctSum + '%';
+	fill.textContent = displaySum > 0 ? displaySum : '';
+	if (displaySum >= TARGET) fill.classList.add('reached');
+	else fill.classList.remove('reached');
+	document.getElementById('sumBarText').textContent = `sum = ${displaySum}`;
+
+	// Stats
+	document.getElementById('statRight').textContent = s.right >= 0 ? s.right : '—';
+	document.getElementById('statLeft').textContent  = s.left;
+	document.getElementById('statSum').textContent   = s.sum;
+	document.getElementById('statResult').textContent = s.result === Infinity ? '∞' : s.result;
+
+	// Progress
+	const pct = s.phase === 'done'
+		? 100
+		: Math.round(((s.right + 1) / NUMS.length) * 100);
+	const bar = document.getElementById('progressBar');
+	bar.style.width = pct + '%';
+	bar.textContent = pct + '%';
+
+	// Event log
+	document.getElementById('eventLog').textContent = s.event;
+
+	// Algorithm step highlight
+	const phaseMap = {
+		init:   1,
+		expand: 2,
+		check:  3,
+		record: 4,
+		shrink: 5,
+		done:   6
+	};
+	setActiveStep(phaseMap[s.phase] || 0);
+}
+
+function setActiveStep(n) {
+	for (let i = 1; i <= 6; i++)
+		document.getElementById(`step${i}`).classList.remove('active');
+	if (n > 0) document.getElementById(`step${n}`).classList.add('active');
+}
+
+// ─── Animation controls ───────────────────────────────────────────────────────
+function advance() {
+	if (stepIdx >= STEPS.length - 1) {
+		// Last step
+		renderStep(STEPS[STEPS.length - 1]);
+		clearInterval(intervalId);
+		isRunning = false;
+		document.getElementById('startBtn').disabled = false;
+		document.getElementById('pauseBtn').disabled = true;
+		return;
+	}
+	stepIdx++;
+	renderStep(STEPS[stepIdx]);
+}
+
+function doStep() {
+	if (stepIdx >= STEPS.length - 1) { resetVisualization(); return; }
+	if (isRunning) pauseVisualization();
+	advance();
+}
+
+function startVisualization() {
+	if (stepIdx >= STEPS.length - 1) resetVisualization();
+	isRunning = true;
+	document.getElementById('startBtn').disabled = true;
+	document.getElementById('pauseBtn').disabled = false;
+	const speed = parseInt(document.getElementById('speedRange').value);
+	intervalId = setInterval(advance, speed);
+}
+
+function pauseVisualization() {
+	isRunning = false;
+	clearInterval(intervalId);
+	document.getElementById('startBtn').disabled = false;
+	document.getElementById('pauseBtn').disabled = true;
+}
+
+function resetVisualization() {
+	clearInterval(intervalId);
+	isRunning = false;
+	stepIdx   = 0;
+	document.getElementById('startBtn').disabled = false;
+	document.getElementById('pauseBtn').disabled = true;
+	buildArrayDOM();
+	renderStep(STEPS[0]);
+}
+
+// Speed slider
+document.getElementById('speedRange').addEventListener('input', function () {
+	document.getElementById('speedValue').textContent = this.value + 'ms';
+	if (isRunning) {
+		clearInterval(intervalId);
+		intervalId = setInterval(advance, parseInt(this.value));
+	}
+});
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+window.onload = function () {
+	buildArrayDOM();
+	renderStep(STEPS[0]);
+};
+</script>
+</body>
+</html>
