@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Visualizacao: 003 - Longest Substring Without Repeating Characters</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
+			padding: 20px;
+			min-height: 100vh;
+		}
+
+		.container {
+			max-width: 1400px;
+			margin: 0 auto;
+			background: white;
+			border-radius: 20px;
+			padding: 30px;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		}
+
+		h1 {
+			color: #0ea5e9;
+			text-align: center;
+			margin-bottom: 10px;
+			font-size: 2.2em;
+		}
+
+		.subtitle {
+			text-align: center;
+			color: #666;
+			margin-bottom: 30px;
+			font-size: 1.1em;
+		}
+
+		.explanation {
+			background: #f0f9ff;
+			padding: 20px;
+			border-radius: 10px;
+			margin-bottom: 30px;
+			border-left: 5px solid #0ea5e9;
+		}
+
+		.explanation h2 {
+			color: #0ea5e9;
+			margin-bottom: 15px;
+		}
+
+		.explanation p {
+			line-height: 1.8;
+			color: #333;
+			margin-bottom: 10px;
+		}
+
+		.explanation code {
+			background: #e0f2fe;
+			padding: 2px 6px;
+			border-radius: 3px;
+			font-family: 'Courier New', monospace;
+			color: #0369a1;
+		}
+
+		.controls {
+			display: flex;
+			gap: 12px;
+			margin-bottom: 30px;
+			flex-wrap: wrap;
+			justify-content: center;
+			align-items: center;
+		}
+
+		button {
+			background: #0ea5e9;
+			color: white;
+			border: none;
+			padding: 12px 22px;
+			border-radius: 8px;
+			cursor: pointer;
+			font-size: 15px;
+			font-weight: 600;
+			transition: all 0.3s;
+			box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
+		}
+
+		button:hover {
+			background: #0284c7;
+			transform: translateY(-2px);
+			box-shadow: 0 6px 20px rgba(14, 165, 233, 0.6);
+		}
+
+		button:disabled {
+			background: #ccc;
+			cursor: not-allowed;
+			transform: none;
+			box-shadow: none;
+		}
+
+		button#stepBtn {
+			background: #8b5cf6;
+			box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+		}
+
+		button#stepBtn:hover {
+			background: #7c3aed;
+			box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+		}
+
+		button#stepBtn:disabled {
+			background: #ccc;
+			box-shadow: none;
+		}
+
+		.speed-control {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			font-size: 14px;
+			color: #374151;
+		}
+
+		input[type="range"] {
+			width: 130px;
+		}
+
+		/* ─── Visualization ─── */
+		.visualization {
+			background: #fafafa;
+			padding: 20px;
+			border-radius: 10px;
+			margin-bottom: 25px;
+			border: 2px solid #e0f2fe;
+		}
+
+		.visualization h3 {
+			text-align: center;
+			color: #0ea5e9;
+			margin-bottom: 15px;
+		}
+
+		.legend {
+			display: flex;
+			gap: 18px;
+			flex-wrap: wrap;
+			justify-content: center;
+			margin-bottom: 14px;
+		}
+
+		.legend-item {
+			display: flex;
+			align-items: center;
+			gap: 7px;
+			font-size: 13px;
+			color: #374151;
+		}
+
+		.legend-box {
+			width: 18px;
+			height: 18px;
+			border-radius: 4px;
+			border: 2px solid transparent;
+			flex-shrink: 0;
+		}
+
+		.progress-bar {
+			width: 100%;
+			height: 24px;
+			background: #e9ecef;
+			border-radius: 12px;
+			overflow: hidden;
+			margin-bottom: 18px;
+		}
+
+		.progress-fill {
+			height: 100%;
+			background: linear-gradient(90deg, #0ea5e9 0%, #8b5cf6 100%);
+			transition: width 0.3s;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: white;
+			font-weight: bold;
+			font-size: 12px;
+		}
+
+		/* ─── Character boxes ─── */
+		.string-display {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 3px;
+			justify-content: center;
+			padding: 10px 5px 20px;
+		}
+
+		.char-box {
+			width: 36px;
+			height: 52px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			border: 2px solid #dee2e6;
+			border-radius: 6px;
+			font-weight: bold;
+			transition: all 0.25s;
+			background: white;
+			gap: 2px;
+		}
+
+		.char-box .char-letter {
+			font-size: 18px;
+			font-weight: 700;
+			line-height: 1;
+			color: #374151;
+		}
+
+		.char-box .char-index {
+			font-size: 9px;
+			color: #9ca3af;
+			font-weight: normal;
+		}
+
+		/* States */
+		.char-box.unvisited {
+			background: #f9fafb;
+			border-color: #e5e7eb;
+		}
+
+		.char-box.unvisited .char-letter { color: #d1d5db; }
+		.char-box.unvisited .char-index  { color: #e5e7eb; }
+
+		.char-box.before-window {
+			background: #f3f4f6;
+			border-color: #d1d5db;
+		}
+
+		.char-box.before-window .char-letter { color: #9ca3af; }
+
+		.char-box.in-window {
+			background: #dcfce7;
+			border-color: #22c55e;
+		}
+
+		.char-box.in-window .char-letter { color: #15803d; }
+		.char-box.in-window .char-index  { color: #4ade80; }
+
+		.char-box.current {
+			background: #fef08a;
+			border-color: #eab308;
+			transform: scale(1.13);
+			box-shadow: 0 4px 14px rgba(234, 179, 8, 0.55);
+			z-index: 10;
+			position: relative;
+		}
+
+		.char-box.current .char-letter { color: #78350f; }
+		.char-box.current .char-index  { color: #b45309; }
+
+		.char-box.repeat-found {
+			background: #fee2e2;
+			border-color: #ef4444;
+		}
+
+		.char-box.repeat-found .char-letter { color: #991b1b; }
+
+		.char-box.max-window {
+			background: #ede9fe;
+			border-color: #8b5cf6;
+		}
+
+		.char-box.max-window .char-letter { color: #5b21b6; }
+		.char-box.max-window .char-index  { color: #8b5cf6; }
+
+		/* ─── Window info strip ─── */
+		.window-info {
+			text-align: center;
+			margin-top: 5px;
+			padding: 12px;
+			background: white;
+			border-radius: 8px;
+			border: 1px solid #e0f2fe;
+			font-size: 14px;
+			color: #374151;
+		}
+
+		.window-text {
+			font-family: 'Courier New', monospace;
+			font-size: 20px;
+			font-weight: bold;
+			color: #0ea5e9;
+			letter-spacing: 3px;
+			margin-top: 6px;
+			word-break: break-all;
+		}
+
+		/* ─── Event log ─── */
+		.event-log {
+			margin-top: 12px;
+			padding: 12px 16px;
+			background: #fffbeb;
+			border-radius: 8px;
+			border-left: 4px solid #eab308;
+			font-size: 14px;
+			color: #92400e;
+			min-height: 46px;
+			line-height: 1.5;
+		}
+
+		/* ─── Stat cards ─── */
+		.stats {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+			gap: 16px;
+			margin-bottom: 25px;
+		}
+
+		.stat-card {
+			background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
+			color: white;
+			padding: 18px;
+			border-radius: 12px;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+		}
+
+		.stat-label {
+			font-size: 12px;
+			opacity: 0.85;
+			margin-bottom: 6px;
+			line-height: 1.3;
+		}
+
+		.stat-value {
+			font-size: 26px;
+			font-weight: bold;
+			font-family: 'Courier New', monospace;
+		}
+
+		/* ─── Alphabet map ─── */
+		.map-section {
+			background: #f8fafc;
+			padding: 20px;
+			border-radius: 10px;
+			margin-bottom: 25px;
+			border: 2px solid #e0f2fe;
+		}
+
+		.map-section h3 {
+			color: #0ea5e9;
+			margin-bottom: 8px;
+			font-size: 16px;
+		}
+
+		.map-section .map-desc {
+			font-size: 13px;
+			color: #64748b;
+			margin-bottom: 14px;
+		}
+
+		.map-grid {
+			display: grid;
+			grid-template-columns: repeat(13, 1fr);
+			gap: 6px;
+		}
+
+		.map-cell {
+			background: white;
+			border: 1px solid #e2e8f0;
+			border-radius: 6px;
+			padding: 6px 3px;
+			text-align: center;
+			font-size: 12px;
+			transition: all 0.25s;
+		}
+
+		.map-cell .map-char {
+			font-weight: 700;
+			font-size: 14px;
+			color: #374151;
+		}
+
+		.map-cell .map-pos {
+			color: #9ca3af;
+			font-family: 'Courier New', monospace;
+			font-size: 11px;
+		}
+
+		.map-cell.seen {
+			background: #f1f5f9;
+			border-color: #cbd5e1;
+		}
+
+		.map-cell.seen .map-pos { color: #64748b; }
+
+		.map-cell.in-window {
+			background: #dcfce7;
+			border-color: #22c55e;
+		}
+
+		.map-cell.in-window .map-char { color: #15803d; }
+		.map-cell.in-window .map-pos  { color: #15803d; font-weight: bold; }
+
+		.map-cell.just-updated {
+			background: #fef08a;
+			border-color: #eab308;
+			transform: scale(1.06);
+			box-shadow: 0 2px 8px rgba(234, 179, 8, 0.4);
+		}
+
+		.map-cell.just-updated .map-char { color: #78350f; }
+		.map-cell.just-updated .map-pos  { color: #b45309; font-weight: bold; }
+
+		/* ─── Algorithm steps ─── */
+		.algorithm-steps {
+			background: #f8f9fa;
+			padding: 20px;
+			border-radius: 10px;
+			margin-bottom: 25px;
+		}
+
+		.algorithm-steps h3 {
+			color: #0ea5e9;
+			margin-bottom: 15px;
+		}
+
+		.step {
+			padding: 12px 15px;
+			margin-bottom: 8px;
+			border-radius: 8px;
+			background: white;
+			border-left: 4px solid #dee2e6;
+			transition: all 0.3s;
+			font-size: 14px;
+			line-height: 1.55;
+		}
+
+		.step.active {
+			border-left-color: #0ea5e9;
+			background: #e0f2fe;
+			transform: translateX(5px);
+		}
+
+		.step-number {
+			display: inline-block;
+			width: 26px;
+			height: 26px;
+			background: #0ea5e9;
+			color: white;
+			border-radius: 50%;
+			text-align: center;
+			line-height: 26px;
+			margin-right: 10px;
+			font-weight: bold;
+			font-size: 13px;
+		}
+
+		/* ─── Complexity ─── */
+		.complexity-info {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 20px;
+			margin-bottom: 25px;
+		}
+
+		.complexity-card {
+			background: #f0f9ff;
+			padding: 20px;
+			border-radius: 10px;
+			border-left: 5px solid #0ea5e9;
+		}
+
+		.complexity-card h3 {
+			color: #0ea5e9;
+			margin-bottom: 10px;
+		}
+
+		.complexity-card p { line-height: 1.7; color: #374151; }
+
+		/* ─── Code ─── */
+		.code-section {
+			background: #1e1e1e;
+			color: #d4d4d4;
+			padding: 20px;
+			border-radius: 10px;
+			overflow-x: auto;
+		}
+
+		.code-section h3 {
+			color: #d4d4d4;
+			margin-bottom: 15px;
+		}
+
+		.code-section pre {
+			font-family: 'Courier New', monospace;
+			line-height: 1.75;
+			font-size: 14px;
+		}
+
+		@media (max-width: 768px) {
+			h1 { font-size: 1.5em; }
+			.complexity-info { grid-template-columns: 1fr; }
+			.map-grid { grid-template-columns: repeat(9, 1fr); }
+			.char-box { width: 30px; height: 46px; }
+			.char-box .char-letter { font-size: 15px; }
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+
+	<h1>🔤 Longest Substring Without Repeating Characters</h1>
+	<p class="subtitle">Sliding Window com Mapa de Posicoes &mdash; LeetCode Problema 003</p>
+
+	<!-- ─── Explanation ─── -->
+	<div class="explanation">
+		<h2>📚 Qual e o Problema?</h2>
+		<p>
+			Dado uma string <code>s</code>, encontre o comprimento da
+			<strong>maior substring sem caracteres repetidos</strong>.
+		</p>
+		<p>
+			Este visualizador usa o caso de teste
+			<code>LengthOfLongestSubstringTest_LongString</code>:
+			<br>
+			<strong>Input:</strong> <code>"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"</code> (52 chars)
+			&nbsp;&rarr;&nbsp; <strong>Resultado esperado: 26</strong>
+		</p>
+		<p>
+			A solucao usa <strong>Sliding Window</strong> com um dicionario que rastreia a ultima posicao de cada caractere.
+			A janela <code>[lastRepeatPos+1, i]</code> garante que nunca existam duplicatas dentro dela.
+			Quando um caractere repetido e encontrado <em>dentro</em> da janela, o limite esquerdo
+			avanca automaticamente para apos sua ultima ocorrencia.
+		</p>
+	</div>
+
+	<!-- ─── Controls ─── -->
+	<div class="controls">
+		<button id="startBtn" onclick="startVisualization()">&#9654;&#65039; Iniciar</button>
+		<button id="pauseBtn" onclick="pauseVisualization()" disabled>&#9208;&#65039; Pausar</button>
+		<button id="stepBtn"  onclick="stepVisualization()">&#9197;&#65039; Passo</button>
+		<button id="resetBtn" onclick="resetVisualization()">&#128260; Resetar</button>
+		<div class="speed-control">
+			<label for="speedRange">Velocidade:</label>
+			<input type="range" id="speedRange" min="80" max="1500" value="600" step="40">
+			<span id="speedValue">600ms</span>
+		</div>
+	</div>
+
+	<!-- ─── String visualization ─── -->
+	<div class="visualization">
+		<h3>String Visualizada &mdash; <span id="strLabel">"abcdefghijklmnopqrstuvwxyz<span style="color:#e879f9;">abcdefghijklmnopqrstuvwxyz</span>"</span></h3>
+
+		<div class="legend">
+			<div class="legend-item">
+				<div class="legend-box" style="background:#fef08a;border-color:#eab308;"></div>
+				Caractere atual (ponteiro direito <strong>i</strong>)
+			</div>
+			<div class="legend-item">
+				<div class="legend-box" style="background:#dcfce7;border-color:#22c55e;"></div>
+				Dentro da janela atual
+			</div>
+			<div class="legend-item">
+				<div class="legend-box" style="background:#f3f4f6;border-color:#d1d5db;"></div>
+				Fora da janela (limite esquerdo passou)
+			</div>
+			<div class="legend-item">
+				<div class="legend-box" style="background:#fee2e2;border-color:#ef4444;"></div>
+				Repeticao detectada (posicao anterior do char)
+			</div>
+			<div class="legend-item">
+				<div class="legend-box" style="background:#ede9fe;border-color:#8b5cf6;"></div>
+				Melhor janela encontrada
+			</div>
+		</div>
+
+		<div class="progress-bar">
+			<div class="progress-fill" id="progressBar" style="width:0%">0%</div>
+		</div>
+
+		<div class="string-display" id="stringDisplay"></div>
+
+		<div class="window-info">
+			<div>
+				Janela atual: posicoes [<strong id="leftBound">—</strong>,&nbsp;<strong id="rightBound">—</strong>]
+				&nbsp;|&nbsp; Tamanho: <strong id="winSize">0</strong>
+			</div>
+			<div class="window-text" id="windowText">—</div>
+		</div>
+
+		<div class="event-log" id="eventLog">
+			Clique em &ldquo;Iniciar&rdquo; ou &ldquo;Passo&rdquo; para comecar a visualizacao&hellip;
+		</div>
+	</div>
+
+	<!-- ─── Stats ─── -->
+	<div class="stats">
+		<div class="stat-card">
+			<div class="stat-label">Ponteiro Direito (i)</div>
+			<div class="stat-value" id="statRight">—</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Limite Esquerdo<br>(lastRepeatPos + 1)</div>
+			<div class="stat-value" id="statLeft">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Tamanho da Janela Atual<br>(i &minus; lastRepeatPos)</div>
+			<div class="stat-value" id="statWindowSize">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Comprimento Maximo<br>(maxLen)</div>
+			<div class="stat-value" id="statMaxLen">0</div>
+		</div>
+	</div>
+
+	<!-- ─── Alphabet map ─── -->
+	<div class="map-section">
+		<h3>🗺️ Mapa de Posicoes &mdash; <code>Dictionary&lt;int, int&gt; map</code></h3>
+		<p class="map-desc">
+			Cada celula mostra a <strong>ultima posicao registrada</strong> do caractere no mapa.
+			<span style="color:#15803d;">&#9632; Verde</span> = esta dentro da janela atual &nbsp;|&nbsp;
+			<span style="color:#b45309;">&#9632; Amarelo</span> = acabou de ser atualizado &nbsp;|&nbsp;
+			<span style="color:#64748b;">&#9632; Cinza</span> = esta fora da janela (posicao antiga)
+		</p>
+		<div class="map-grid" id="mapGrid"></div>
+	</div>
+
+	<!-- ─── Algorithm steps ─── -->
+	<div class="algorithm-steps">
+		<h3>🔍 Passos do Algoritmo (execucao atual)</h3>
+		<div class="step" id="step1">
+			<span class="step-number">1</span>
+			<strong>Inicializacao:</strong> <code>map = {}</code>, <code>maxLen = 0</code>, <code>lastRepeatPos = -1</code>
+		</div>
+		<div class="step" id="step2">
+			<span class="step-number">2</span>
+			<strong>Loop:</strong> para cada <code>i</code> de <code>0</code> ate <code>s.Length - 1</code> &mdash; percorrer a string
+		</div>
+		<div class="step" id="step3">
+			<span class="step-number">3</span>
+			<strong>&#9888;&#65039; Repeticao detectada:</strong>
+			<code>map.ContainsKey(s[i]) &amp;&amp; lastRepeatPos &lt; map[s[i]]</code>
+			<br>
+			<small style="margin-left:36px;color:#64748b;">
+				&rarr; <code>lastRepeatPos = map[s[i]]</code> &mdash; o limite esquerdo salta para apos a duplicata
+			</small>
+		</div>
+		<div class="step" id="step4">
+			<span class="step-number">4</span>
+			<strong>Atualizar maximo:</strong> se <code>maxLen &lt; i &minus; lastRepeatPos</code>
+			<br>
+			<small style="margin-left:36px;color:#64748b;">
+				&rarr; <code>maxLen = i &minus; lastRepeatPos</code> &mdash; nova janela maxima!
+			</small>
+		</div>
+		<div class="step" id="step5">
+			<span class="step-number">5</span>
+			<strong>Registrar posicao:</strong> <code>map[s[i]] = i</code> &mdash; guarda ou atualiza posicao do char
+		</div>
+		<div class="step" id="step6">
+			<span class="step-number">6</span>
+			<strong>&#9989; Resultado:</strong> retornar <code>maxLen</code>
+		</div>
+	</div>
+
+	<!-- ─── Complexity ─── -->
+	<div class="complexity-info">
+		<div class="complexity-card">
+			<h3>&#9201;&#65039; Complexidade de Tempo</h3>
+			<p><strong>O(n)</strong> &mdash; Linear</p>
+			<p>Uma unica passagem pela string. O ponteiro direito avanca exatamente <em>n</em> vezes.</p>
+		</div>
+		<div class="complexity-card">
+			<h3>&#128190; Complexidade de Espaco</h3>
+			<p><strong>O(k)</strong> &mdash; onde <em>k</em> = tamanho do alfabeto</p>
+			<p>O dicionario armazena no maximo <em>k</em> entradas (26 para strings exclusivamente alfabeticas).</p>
+		</div>
+	</div>
+
+	<!-- ─── C# Code ─── -->
+	<div class="code-section">
+		<h3>&#128187; Implementacao em C#</h3>
+		<pre>
+<span style="color:#569cd6;">public int</span> <span style="color:#dcdcaa;">LengthOfLongestSubstring</span>(<span style="color:#569cd6;">string</span> s)
+{
+    <span style="color:#c586c0;">if</span> (string.IsNullOrEmpty(s)) <span style="color:#c586c0;">return</span> <span style="color:#b5cea8;">0</span>;
+
+    <span style="color:#569cd6;">var</span> map = <span style="color:#c586c0;">new</span> Dictionary&lt;<span style="color:#569cd6;">int</span>, <span style="color:#569cd6;">int</span>&gt;();
+    <span style="color:#569cd6;">var</span> maxLen = <span style="color:#b5cea8;">0</span>;
+    <span style="color:#569cd6;">var</span> lastRepeatPos = -<span style="color:#b5cea8;">1</span>;
+
+    <span style="color:#c586c0;">for</span> (<span style="color:#569cd6;">int</span> i = <span style="color:#b5cea8;">0</span>; i &lt; s.Length; i++)
+    {
+        <span style="color:#6a9955;">// Se o char esta no mapa E sua posicao esta dentro da janela atual:</span>
+        <span style="color:#c586c0;">if</span> (map.ContainsKey(s[i]) &amp;&amp; lastRepeatPos &lt; map[s[i]])
+            lastRepeatPos = map[s[i]];   <span style="color:#6a9955;">// empurra limite esquerdo</span>
+
+        <span style="color:#6a9955;">// A janela atual tem tamanho (i - lastRepeatPos); e a maior ate agora?</span>
+        <span style="color:#c586c0;">if</span> (maxLen &lt; i - lastRepeatPos)
+            maxLen = i - lastRepeatPos;
+
+        <span style="color:#6a9955;">// Registra/atualiza a posicao do char no mapa:</span>
+        map[s[i]] = i;
+    }
+
+    <span style="color:#c586c0;">return</span> maxLen;
+}</pre>
+	</div>
+
+</div><!-- /container -->
+
+<script>
+	// ─── Constants ───────────────────────────────────────────────────────────────
+	const STR      = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
+	const ALPHABET = "abcdefghijklmnopqrstuvwxyz";
+
+	// ─── State ───────────────────────────────────────────────────────────────────
+	let right         = 0;
+	let lastRepeatPos = -1;
+	let maxLen        = 0;
+	let charMap       = {};   // charCode -> last index
+	let maxStart      = 0;
+	let maxEnd        = -1;
+	let isRunning     = false;
+	let isDone        = false;
+	let intervalId    = null;
+	let lastUpdated   = null; // char whose map cell gets the "just-updated" style
+
+	// ─── Build DOM ───────────────────────────────────────────────────────────────
+	function initDisplay() {
+		const container = document.getElementById('stringDisplay');
+		container.innerHTML = '';
+		for (let i = 0; i < STR.length; i++) {
+			const box = document.createElement('div');
+			box.className = 'char-box unvisited';
+			box.id = `char-${i}`;
+			box.innerHTML =
+				`<span class="char-letter">${STR[i]}</span>` +
+				`<span class="char-index">${i}</span>`;
+			container.appendChild(box);
+		}
+	}
+
+	function initMapGrid() {
+		const grid = document.getElementById('mapGrid');
+		grid.innerHTML = '';
+		for (const ch of ALPHABET) {
+			const cell = document.createElement('div');
+			cell.className = 'map-cell';
+			cell.id = `map-${ch}`;
+			cell.innerHTML =
+				`<div class="map-char">${ch}</div>` +
+				`<div class="map-pos">&mdash;</div>`;
+			grid.appendChild(cell);
+		}
+	}
+
+	// ─── Update helpers ──────────────────────────────────────────────────────────
+	function updateStringDisplay(repeatOldPos) {
+		const leftBound = lastRepeatPos + 1;
+		for (let i = 0; i < STR.length; i++) {
+			const box = document.getElementById(`char-${i}`);
+			box.className = 'char-box'; // reset all state classes
+
+			if (i > right) {
+				box.classList.add('unvisited');
+			} else if (i < leftBound) {
+				box.classList.add('before-window');
+			} else if (i === right) {
+				box.classList.add('current');
+			} else {
+				box.classList.add('in-window');
+			}
+		}
+		// Flash old position of repeated char (it's now before-window)
+		if (repeatOldPos >= 0) {
+			const oldBox = document.getElementById(`char-${repeatOldPos}`);
+			if (oldBox) {
+				oldBox.className = 'char-box repeat-found';
+			}
+		}
+	}
+
+	function updateMapGrid(updatedChar) {
+		const leftBound = lastRepeatPos + 1;
+		for (const ch of ALPHABET) {
+			const cell  = document.getElementById(`map-${ch}`);
+			const posEl = cell.querySelector('.map-pos');
+			const code  = ch.charCodeAt(0);
+
+			cell.className = 'map-cell'; // reset
+
+			if (charMap.hasOwnProperty(code)) {
+				const pos = charMap[code];
+				posEl.textContent = pos;
+
+				if (ch === updatedChar) {
+					cell.classList.add('just-updated');
+				} else if (pos >= leftBound) {
+					cell.classList.add('in-window');
+				} else {
+					cell.classList.add('seen');
+				}
+			} else {
+				posEl.innerHTML = '&mdash;';
+			}
+		}
+	}
+
+	function highlightMaxWindow() {
+		for (let i = 0; i < STR.length; i++) {
+			const box = document.getElementById(`char-${i}`);
+			box.className = (i >= maxStart && i <= maxEnd)
+				? 'char-box max-window'
+				: 'char-box before-window';
+		}
+	}
+
+	function setActiveStep(n) {
+		for (let i = 1; i <= 6; i++) {
+			document.getElementById(`step${i}`).classList.remove('active');
+		}
+		if (n > 0) document.getElementById(`step${n}`).classList.add('active');
+	}
+
+	function updateStats() {
+		const leftBound  = lastRepeatPos + 1;
+		const windowSize = right - lastRepeatPos;
+		document.getElementById('statRight').textContent      = isDone ? STR.length - 1 : right;
+		document.getElementById('statLeft').textContent       = leftBound;
+		document.getElementById('statWindowSize').textContent = isDone ? maxLen : windowSize;
+		document.getElementById('statMaxLen').textContent     = maxLen;
+	}
+
+	function updateWindowUI() {
+		const leftBound = lastRepeatPos + 1;
+		document.getElementById('leftBound').textContent  = leftBound;
+		document.getElementById('rightBound').textContent = right;
+		const windowStr = STR.slice(leftBound, right + 1);
+		document.getElementById('winSize').textContent    = windowStr.length;
+		document.getElementById('windowText').textContent = windowStr || '—';
+	}
+
+	function updateProgress() {
+		const pct = Math.min(Math.round(((right + 1) / STR.length) * 100), 100);
+		const bar = document.getElementById('progressBar');
+		bar.style.width   = pct + '%';
+		bar.textContent   = pct + '%';
+	}
+
+	// ─── One algorithm step ──────────────────────────────────────────────────────
+	function visualizeStep() {
+		if (right >= STR.length) {
+			// Algorithm complete
+			clearInterval(intervalId);
+			isRunning = false;
+			isDone    = true;
+			document.getElementById('startBtn').disabled = false;
+			document.getElementById('pauseBtn').disabled = true;
+
+			setActiveStep(6);
+			highlightMaxWindow();
+
+			// Update map to final state (no "just-updated" highlight)
+			updateMapGrid(null);
+
+			// Show final window info
+			document.getElementById('leftBound').textContent  = maxStart;
+			document.getElementById('rightBound').textContent = maxEnd;
+			const finalWindow = STR.slice(maxStart, maxEnd + 1);
+			document.getElementById('winSize').textContent    = finalWindow.length;
+			document.getElementById('windowText').textContent = finalWindow;
+
+			document.getElementById('statRight').textContent      = STR.length - 1;
+			document.getElementById('statLeft').textContent       = maxStart;
+			document.getElementById('statWindowSize').textContent = maxLen;
+			document.getElementById('statMaxLen').textContent     = maxLen;
+
+			document.getElementById('progressBar').style.width = '100%';
+			document.getElementById('progressBar').textContent  = '100%';
+
+			document.getElementById('eventLog').textContent =
+				`✅ Concluido! maxLen = ${maxLen}. ` +
+				`Melhor janela: "${finalWindow}" (posicoes ${maxStart}–${maxEnd}).`;
+			return;
+		}
+
+		const ch       = STR[right];
+		const charCode = ch.charCodeAt(0);
+		let   repeatOldPos = -1;
+		let   maxUpdated   = false;
+		let   event        = '';
+
+		// ── Step 3: check for repeat ─────────────────────────────────────────────
+		if (charMap.hasOwnProperty(charCode) && lastRepeatPos < charMap[charCode]) {
+			repeatOldPos  = charMap[charCode];
+			const prevLeft = lastRepeatPos + 1;
+			lastRepeatPos = charMap[charCode];
+			setActiveStep(3);
+			event = `⚠️ '${ch}' (pos ${right}) ja foi visto na pos ${repeatOldPos}! ` +
+			        `Limite esquerdo avanca de ${prevLeft} → ${lastRepeatPos + 1}.`;
+		}
+
+		// ── Step 4: update maxLen ────────────────────────────────────────────────
+		const windowSize = right - lastRepeatPos;
+		if (maxLen < windowSize) {
+			maxLen      = windowSize;
+			maxStart    = lastRepeatPos + 1;
+			maxEnd      = right;
+			maxUpdated  = true;
+		}
+
+		// ── Step 5: update map ───────────────────────────────────────────────────
+		charMap[charCode] = right;
+
+		// Decide which step to highlight (most interesting event wins)
+		if (repeatOldPos >= 0) {
+			// already set to step 3 above
+		} else if (maxUpdated) {
+			setActiveStep(4);
+			event = `✔️ '${ch}' (pos ${right}) — janela [${lastRepeatPos + 1}, ${right}] ` +
+			        `tem tamanho ${windowSize}. Novo maximo = ${maxLen}!`;
+		} else {
+			setActiveStep(5);
+			event = `✔️ '${ch}' (pos ${right}) — janela [${lastRepeatPos + 1}, ${right}], ` +
+			        `tamanho ${windowSize}. maxLen permanece ${maxLen}.`;
+		}
+
+		if (maxUpdated && repeatOldPos >= 0) {
+			event += ` Novo maximo = ${maxLen}!`;
+		}
+
+		// ── Refresh DOM ──────────────────────────────────────────────────────────
+		updateStringDisplay(repeatOldPos);
+		updateMapGrid(ch);
+		updateStats();
+		updateWindowUI();
+		updateProgress();
+		document.getElementById('eventLog').textContent = event;
+
+		right++;
+	}
+
+	// ─── Control functions ───────────────────────────────────────────────────────
+	function startVisualization() {
+		if (isDone) resetVisualization();
+		isRunning = true;
+		document.getElementById('startBtn').disabled = true;
+		document.getElementById('pauseBtn').disabled = false;
+		setActiveStep(2);
+		const speed = parseInt(document.getElementById('speedRange').value);
+		intervalId = setInterval(visualizeStep, speed);
+	}
+
+	function pauseVisualization() {
+		isRunning = false;
+		document.getElementById('startBtn').disabled = false;
+		document.getElementById('pauseBtn').disabled = true;
+		clearInterval(intervalId);
+	}
+
+	function stepVisualization() {
+		if (isDone) { resetVisualization(); return; }
+		if (isRunning) pauseVisualization();
+		if (right === 0) setActiveStep(2);
+		visualizeStep();
+	}
+
+	function resetVisualization() {
+		clearInterval(intervalId);
+		isRunning     = false;
+		isDone        = false;
+		right         = 0;
+		lastRepeatPos = -1;
+		maxLen        = 0;
+		charMap       = {};
+		maxStart      = 0;
+		maxEnd        = -1;
+		lastUpdated   = null;
+
+		document.getElementById('startBtn').disabled = false;
+		document.getElementById('pauseBtn').disabled = true;
+
+		initDisplay();
+		initMapGrid();
+		setActiveStep(1);
+
+		document.getElementById('statRight').textContent      = '—';
+		document.getElementById('statLeft').textContent       = '0';
+		document.getElementById('statWindowSize').textContent = '0';
+		document.getElementById('statMaxLen').textContent     = '0';
+		document.getElementById('leftBound').textContent      = '—';
+		document.getElementById('rightBound').textContent     = '—';
+		document.getElementById('winSize').textContent        = '0';
+		document.getElementById('windowText').textContent     = '—';
+		document.getElementById('progressBar').style.width    = '0%';
+		document.getElementById('progressBar').textContent    = '0%';
+		document.getElementById('eventLog').textContent       =
+			'Clique em \u201cIniciar\u201d ou \u201cPasso\u201d para comecar a visualizacao\u2026';
+	}
+
+	// ─── Speed slider ────────────────────────────────────────────────────────────
+	document.getElementById('speedRange').addEventListener('input', function () {
+		document.getElementById('speedValue').textContent = this.value + 'ms';
+		if (isRunning) {
+			clearInterval(intervalId);
+			intervalId = setInterval(visualizeStep, parseInt(this.value));
+		}
+	});
+
+	// ─── Init ────────────────────────────────────────────────────────────────────
+	window.onload = function () {
+		initDisplay();
+		initMapGrid();
+		setActiveStep(1);
+	};
+</script>
+</body>
+</html>
