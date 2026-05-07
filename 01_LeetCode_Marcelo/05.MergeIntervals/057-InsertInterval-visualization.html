@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Visualizacao: 057 - Insert Interval</title>
+	<style>
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+			padding: 20px; min-height: 100vh;
+		}
+		.container {
+			max-width: 1100px; margin: 0 auto; background: white;
+			border-radius: 20px; padding: 30px;
+			box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+		}
+		h1 { color: #c2410c; text-align: center; margin-bottom: 8px; font-size: 2.1em; }
+		.subtitle { text-align: center; color: #666; margin-bottom: 26px; font-size: 1.05em; }
+		.explanation {
+			background: #fff7ed; padding: 20px; border-radius: 10px;
+			margin-bottom: 26px; border-left: 5px solid #f97316;
+		}
+		.explanation h2 { color: #c2410c; margin-bottom: 12px; }
+		.explanation p { line-height: 1.8; color: #333; margin-bottom: 8px; }
+		.explanation code {
+			background: #ffedd5; padding: 2px 6px; border-radius: 3px;
+			font-family: 'Courier New', monospace; color: #9a3412;
+		}
+		.controls {
+			display: flex; gap: 12px; margin-bottom: 26px;
+			flex-wrap: wrap; justify-content: center; align-items: center;
+		}
+		button {
+			background: #f97316; color: white; border: none;
+			padding: 11px 20px; border-radius: 8px; cursor: pointer;
+			font-size: 15px; font-weight: 600; transition: all 0.25s;
+			box-shadow: 0 4px 12px rgba(249,115,22,0.4);
+		}
+		button:hover { background: #ea580c; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(249,115,22,0.55); }
+		button:disabled { background: #d1d5db; cursor: not-allowed; transform: none; box-shadow: none; }
+		button#stepBtn { background: #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,0.4); }
+		button#stepBtn:hover { background: #d97706; }
+		button#stepBtn:disabled { background: #d1d5db; box-shadow: none; }
+		.speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+		input[type="range"] { width: 130px; accent-color: #f97316; }
+
+		.visualization {
+			background: #fafafa; padding: 22px 20px 18px;
+			border-radius: 12px; margin-bottom: 22px; border: 2px solid #fed7aa;
+		}
+		.visualization h3 { text-align: center; color: #c2410c; margin-bottom: 16px; }
+
+		#mainCanvas { display: block; margin: 0 auto 18px; border-radius: 8px; background: white; border: 1px solid #e2e8f0; width: 100%; }
+
+		.legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px; }
+		.legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+		.legend-box { width: 32px; height: 20px; border-radius: 4px; border: 2px solid; flex-shrink: 0; }
+
+		.phase-banner {
+			text-align: center; padding: 10px 20px; border-radius: 20px;
+			font-weight: 700; font-size: 14px; margin: 0 auto 16px;
+			display: inline-block;
+		}
+		.phase-wrap { text-align: center; margin-bottom: 12px; }
+		.phase-banner.phase1 { background: #fff1f2; color: #9f1239; border: 2px solid #f97316; }
+		.phase-banner.phase2 { background: #fff7ed; color: #9a3412; border: 2px solid #ea580c; }
+		.phase-banner.phase3 { background: #fef3c7; color: #92400e; border: 2px solid #f59e0b; }
+		.phase-banner.done { background: #d1fae5; color: #065f46; border: 2px solid #10b981; }
+
+		.intervals-display {
+			background: white; border-radius: 10px; border: 2px solid #fed7aa;
+			padding: 14px; margin-bottom: 14px; min-height: 60px;
+		}
+		.intervals-display h4 { color: #c2410c; font-size: 12px; margin-bottom: 10px; }
+		.intervals-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+		.interval-item {
+			padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600;
+			border: 2px solid; transition: all 0.3s;
+		}
+		.interval-item.original { background: #e0f2fe; border-color: #0284c7; color: #0c4a6e; }
+		.interval-item.new { background: #fce7f3; border-color: #ec4899; color: #831843; }
+		.interval-item.overlaps { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+		.interval-item.merged { background: #dcfce7; border-color: #16a34a; color: #15803d; }
+		.interval-item.highlighted { transform: scale(1.08); box-shadow: 0 0 12px rgba(249,115,22,0.6); }
+
+		.event-log {
+			padding: 12px 16px; background: #fff7ed;
+			border-radius: 8px; border-left: 4px solid #f97316;
+			font-size: 14px; color: #9a3412; min-height: 44px; line-height: 1.55;
+			margin-top: 12px;
+		}
+
+		.stats {
+			display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+			gap: 14px; margin-bottom: 22px;
+		}
+		.stat-card {
+			background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+			color: white; padding: 16px; border-radius: 12px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		}
+		.stat-label { font-size: 12px; opacity: 0.85; margin-bottom: 5px; }
+		.stat-value { font-size: 20px; font-weight: bold; font-family: 'Courier New', monospace; }
+
+		.algorithm-steps { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 22px; }
+		.algorithm-steps h3 { color: #c2410c; margin-bottom: 14px; }
+		.step {
+			padding: 11px 15px; margin-bottom: 8px; border-radius: 8px;
+			background: white; border-left: 4px solid #e5e7eb;
+			transition: all 0.3s; font-size: 14px; line-height: 1.55;
+		}
+		.step.active { border-left-color: #f97316; background: #fff7ed; transform: translateX(5px); }
+		.step-number {
+			display: inline-block; width: 26px; height: 26px; background: #f97316;
+			color: white; border-radius: 50%; text-align: center; line-height: 26px;
+			margin-right: 10px; font-weight: bold; font-size: 13px;
+		}
+		.complexity-info { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+		.complexity-card { background: #fff7ed; padding: 18px; border-radius: 10px; border-left: 5px solid #f97316; }
+		.complexity-card h3 { color: #c2410c; margin-bottom: 8px; }
+		.complexity-card p { line-height: 1.7; color: #374151; }
+		.code-section { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px; overflow-x: auto; }
+		.code-section h3 { color: #d4d4d4; margin-bottom: 14px; }
+		.code-section pre { font-family: 'Courier New', monospace; line-height: 1.75; font-size: 13px; }
+		@media (max-width: 700px) {
+			h1 { font-size: 1.5em; }
+			.complexity-info { grid-template-columns: 1fr; }
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+	<h1>&#x1F7E8; Insert Interval</h1>
+	<p class="subtitle">Insercao + Mesclagem Seletiva em 3 Fases &mdash; LeetCode 0057</p>
+
+	<div class="explanation">
+		<h2>&#x1F4D6; Qual e o Problema?</h2>
+		<p>
+			Dado um conjunto de intervalos <strong>nao-sobrepostos</strong> ordenados, e um novo intervalo para inserir,
+			retorne um conjunto de intervalos mesclados apos a insercao.
+		</p>
+		<p>
+			Este visualizador usa <code>InsertTest_MultipleOverlap()</code>:
+			<br>
+			<strong>Entrada:</strong> intervalos = <code>[[1,2],[3,5],[6,7],[8,10],[12,16]]</code>, newInterval = <code>[4,9]</code>
+			<br>
+			<strong>Saida:</strong> <code>[[1,2],[3,10],[12,16]]</code>
+		</p>
+		<p>
+			<strong>Estrategia:</strong> Tres fases: (1) Adicionar intervalos que terminam antes da insercao;
+			(2) Mesclar intervalos sobrepostos; (3) Adicionar intervalos que comecam apos a insercao.
+		</p>
+	</div>
+
+	<div class="controls">
+		<button id="startBtn" onclick="startVisualization()">&#9654;&#65039; Iniciar</button>
+		<button id="pauseBtn" onclick="pauseVisualization()" disabled>&#9208;&#65039; Pausar</button>
+		<button id="stepBtn"  onclick="doStep()">&#9197;&#65039; Passo</button>
+		<button id="resetBtn" onclick="resetVisualization()">&#128260; Resetar</button>
+		<div class="speed-control">
+			<label for="speedRange">Velocidade:</label>
+			<input type="range" id="speedRange" min="300" max="2500" value="900" step="100">
+			<span id="speedValue">900ms</span>
+		</div>
+	</div>
+
+	<div class="visualization">
+		<h3>Timeline dos Intervalos &nbsp;|&nbsp; Insercao com Mesclagem em 3 Fases</h3>
+
+		<div class="legend">
+			<div class="legend-item"><div class="legend-box" style="background:#e0f2fe;border-color:#0284c7;"></div>Original</div>
+			<div class="legend-item"><div class="legend-box" style="background:#fce7f3;border-color:#ec4899;"></div>Novo</div>
+			<div class="legend-item"><div class="legend-box" style="background:#fef3c7;border-color:#f59e0b;"></div>Sobrepoe</div>
+			<div class="legend-item"><div class="legend-box" style="background:#dcfce7;border-color:#16a34a;"></div>Resultado</div>
+		</div>
+
+		<div class="phase-wrap">
+			<span class="phase-banner phase1" id="phaseBanner">Fase 1: Intervalos antes da insercao</span>
+		</div>
+
+		<canvas id="mainCanvas" width="640" height="220"></canvas>
+
+		<div class="intervals-display">
+			<h4>Intervalos Atuais</h4>
+			<div class="intervals-row" id="intervalsDisplay">
+				<span style="color:#9ca3af;font-size:13px;">Aguardando inicio...</span>
+			</div>
+		</div>
+
+		<div class="event-log" id="eventLog">Clique em "Iniciar" ou "Passo" para comecar...</div>
+	</div>
+
+	<div class="stats">
+		<div class="stat-card">
+			<div class="stat-label">Etapa</div>
+			<div class="stat-value" id="statPhase">—</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Iteracao</div>
+			<div class="stat-value" id="statIter">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Result size</div>
+			<div class="stat-value" id="statResult">—</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">NewInterval</div>
+			<div class="stat-value" id="statNew">[4,9]</div>
+		</div>
+	</div>
+
+	<div class="algorithm-steps">
+		<h3>&#x1F50D; Passos do Algoritmo (3 Fases)</h3>
+		<div class="step" id="step1">
+			<span class="step-number">1</span>
+			<strong>Fase 1 - Antes:</strong> adicionar todos os intervalos que terminam antes de <code>newInterval.start</code>.
+			Exemplo: <code>[1,2].end=2 < newInterval.start=4</code> → adiciona <code>[1,2]</code>.
+		</div>
+		<div class="step" id="step2">
+			<span class="step-number">2</span>
+			<strong>Fase 2 - Overlap:</strong> enquanto intervalos sobrepoe com <code>newInterval</code>,
+			mesclar: <code>newInterval.start = min(...)</code>, <code>newInterval.end = max(...)</code>.
+		</div>
+		<div class="step" id="step3">
+			<span class="step-number">3</span>
+			<strong>Fase 2 - Mesclar:</strong> exemplo: <code>newInterval=[4,9]</code> com <code>[3,5]</code>
+			resulta em <code>[3,9]</code>; depois <code>[6,7]</code> resulta em <code>[3,9]</code>, etc.
+		</div>
+		<div class="step" id="step4">
+			<span class="step-number">4</span>
+			<strong>Fase 2 - Final:</strong> depois de mesclar tudo, adiciona o <code>newInterval</code> final.
+		</div>
+		<div class="step" id="step5">
+			<span class="step-number">5</span>
+			<strong>Fase 3 - Depois:</strong> adicionar todos os intervalos que comecam depois de <code>newInterval.end</code>.
+			Exemplo: <code>[12,16].start=12 > newInterval.end=10</code> → adiciona <code>[12,16]</code>.
+		</div>
+		<div class="step" id="step6">
+			<span class="step-number">6</span>
+			<strong>Resultado Final:</strong> <code>[[1,2], [3,10], [12,16]]</code>. Insercao com mesclagem concluida.
+		</div>
+	</div>
+
+	<div class="complexity-info">
+		<div class="complexity-card">
+			<h3>&#x23F1;&#xFE0F; Complexidade de Tempo</h3>
+			<p><strong>O(n)</strong></p>
+			<p>Varredura linear uma unica vez atraves de todos os intervalos. Sem ordenacao necessaria.</p>
+		</div>
+		<div class="complexity-card">
+			<h3>&#x1F4BE; Complexidade de Espaco</h3>
+			<p><strong>O(n)</strong></p>
+			<p>Array de resultado pode ter ate n intervalos. Sem espaco extra alem do output.</p>
+		</div>
+	</div>
+
+	<div class="code-section">
+		<h3>&#x1F4BB; Implementacao em C#</h3>
+		<pre>
+<span style="color:#569cd6;">public</span> IList&lt;Interval&gt; <span style="color:#dcdcaa;">Insert</span>(IList&lt;Interval&gt; intervals, Interval newInterval)
+{
+    <span style="color:#c586c0;">var</span> result = <span style="color:#c586c0;">new</span> List&lt;Interval&gt;();
+
+    <span style="color:#6a9955;">// Fase 1: adicionar intervalos que terminam antes de newInterval</span>
+    <span style="color:#c586c0;">for</span> (<span style="color:#569cd6;">int</span> i = <span style="color:#b5cea8;">0</span>; i < intervals.Count; i++)
+    {
+        <span style="color:#c586c0;">if</span> (newInterval.start > intervals[i].end)
+            result.Add(intervals[i]);
+        <span style="color:#c586c0;">else</span> <span style="color:#c586c0;">if</span> (newInterval.end < intervals[i].start)
+        {
+            <span style="color:#6a9955;">// Fase 3: add remaining, skip to end</span>
+            result.Add(newInterval);
+            <span style="color:#c586c0;">for</span> (<span style="color:#569cd6;">int</span> j = i; j < intervals.Count; j++)
+                result.Add(intervals[j]);
+            <span style="color:#c586c0;">return</span> result;
+        }
+        <span style="color:#c586c0;">else</span>
+        {
+            <span style="color:#6a9955;">// Fase 2: sobreposicao → mesclar</span>
+            newInterval.start = Math.Min(intervals[i].start, newInterval.start);
+            newInterval.end = Math.Max(intervals[i].end, newInterval.end);
+        }
+    }
+    result.Add(newInterval);
+    <span style="color:#c586c0;">return</span> result;
+}</pre>
+	</div>
+</div>
+<script>
+// Test: InsertTest_MultipleOverlap()
+// intervals = [[1,2],[3,5],[6,7],[8,10],[12,16]]
+// newInterval = [4,9]
+// Expected output: [[1,2],[3,10],[12,16]]
+//
+// Execution:
+// i=0: [1,2], newInterval.start=4 > [1,2].end=2? YES → add [1,2] to result
+// i=1: [3,5], newInterval.start=4 > [3,5].end=5? NO. newInterval.end=9 < [3,5].start=3? NO → MERGE
+//      → newInterval = [min(3,4), max(5,9)] = [3,9]
+// i=2: [6,7], newInterval.start=3 > [6,7].end=7? NO. newInterval.end=9 < [6,7].start=6? NO → MERGE
+//      → newInterval = [min(6,3), max(7,9)] = [3,9]
+// i=3: [8,10], newInterval.start=3 > [8,10].end=10? NO. newInterval.end=9 < [8,10].start=8? NO → MERGE
+//      → newInterval = [min(8,3), max(10,9)] = [3,10]
+// i=4: [12,16], newInterval.start=3 > [12,16].end=16? NO. newInterval.end=10 < [12,16].start=12? YES
+//      → add newInterval=[3,10], add remaining [12,16], return
+
+const INPUT_INTERVALS = [[1,2],[3,5],[6,7],[8,10],[12,16]];
+const NEW_INTERVAL = [4,9];
+const OUTPUT = [[1,2],[3,10],[12,16]];
+
+const STEPS = [
+	{phase:'init', intervals:INPUT_INTERVALS, newInterval:NEW_INTERVAL, result:[], mergedNI:NEW_INTERVAL, iter:0, highlight:null,
+	 event:'Inicio: Intervalos = [[1,2],[3,5],[6,7],[8,10],[12,16]]. newInterval = [4,9]. Fase 1: buscar intervalos antes.'},
+	{phase:'phase1_check', intervals:INPUT_INTERVALS, newInterval:NEW_INTERVAL, result:[], mergedNI:NEW_INTERVAL, iter:0, highlight:0,
+	 event:'i=0: Verificar [1,2]. newInterval.start=4 > [1,2].end=2? SIM → Fase 1 (antes). Adicionar [1,2] a result.'},
+	{phase:'phase1_add', intervals:INPUT_INTERVALS, newInterval:NEW_INTERVAL, result:[[1,2]], mergedNI:NEW_INTERVAL, iter:1, highlight:0,
+	 event:'result = [[1,2]]. Passar para proximo intervalo.'},
+	{phase:'phase2_detect', intervals:INPUT_INTERVALS, newInterval:NEW_INTERVAL, result:[[1,2]], mergedNI:NEW_INTERVAL, iter:1, highlight:1,
+	 event:'i=1: Verificar [3,5]. newInterval.start=4 > [3,5].end=5? NAO. newInterval.end=9 < [3,5].start=3? NAO → Sobreposicao! Fase 2.'},
+	{phase:'phase2_merge', intervals:INPUT_INTERVALS, newInterval:NEW_INTERVAL, result:[[1,2]], mergedNI:[3,9], iter:1, highlight:1,
+	 event:'Mesclar [3,5] com [4,9]: newInterval = [min(3,4), max(5,9)] = [3,9].'},
+	{phase:'phase2_check', intervals:INPUT_INTERVALS, newInterval:NEW_INTERVAL, result:[[1,2]], mergedNI:[3,9], iter:2, highlight:2,
+	 event:'i=2: Verificar [6,7]. newInterval[3,9] sobrepoe? newInterval.end=9 >= [6,7].start=6? SIM → Mesclar.'},
+	{phase:'phase2_merge', intervals:INPUT_INTERVALS, newInterval:NEW_INTERVAL, result:[[1,2]], mergedNI:[3,9], iter:2, highlight:2,
+	 event:'Mesclar [6,7] com [3,9]: newInterval = [min(6,3), max(7,9)] = [3,9].'},
+	{phase:'phase2_check', intervals:INPUT_INTERVALS, newInterval:NEW_INTERVAL, result:[[1,2]], mergedNI:[3,9], iter:3, highlight:3,
+	 event:'i=3: Verificar [8,10]. newInterval[3,9] sobrepoe? newInterval.end=9 >= [8,10].start=8? SIM → Mesclar.'},
+	{phase:'phase2_merge', intervals:INPUT_INTERVALS, newInterval:NEW_INTERVAL, result:[[1,2]], mergedNI:[3,10], iter:3, highlight:3,
+	 event:'Mesclar [8,10] com [3,9]: newInterval = [min(8,3), max(10,9)] = [3,10].'},
+	{phase:'phase3_detect', intervals:INPUT_INTERVALS, newInterval:NEW_INTERVAL, result:[[1,2]], mergedNI:[3,10], iter:4, highlight:4,
+	 event:'i=4: Verificar [12,16]. newInterval.end=10 < [12,16].start=12? SIM → Sem sobreposicao. Fase 3 (depois).'},
+	{phase:'phase3_final', intervals:INPUT_INTERVALS, newInterval:NEW_INTERVAL, result:[[1,2],[3,10],[12,16]], mergedNI:[3,10], iter:4, highlight:null,
+	 event:'✅ Algoritmo concluido! result = [[1,2], [3,10], [12,16]]. Insercao e mesclagem completas.'},
+];
+
+let stepIdx=0, isRunning=false, intervalId=null;
+
+function drawCanvas(s) {
+	const canvas = document.getElementById('mainCanvas');
+	const ctx = canvas.getContext('2d');
+	ctx.clearRect(0,0,640,220);
+
+	const minVal=0, maxVal=18, scale=550/maxVal, offsetX=45, offsetY=140;
+
+	// Title
+	ctx.font='12px Segoe UI'; ctx.fillStyle='#94a3b8'; ctx.textAlign='center';
+	ctx.fillText('Timeline [0 ao '+maxVal+']: Insercao de [4,9] em intervalos nao-sobrepostos', 320, 14);
+
+	// Axis
+	ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=1.5;
+	ctx.beginPath(); ctx.moveTo(offsetX,offsetY); ctx.lineTo(offsetX+scale*maxVal,offsetY); ctx.stroke();
+	ctx.font='10px Segoe UI'; ctx.fillStyle='#94a3b8'; ctx.textAlign='center';
+	for (let i=0;i<=maxVal;i+=2) {
+		const x=offsetX+i*scale;
+		ctx.beginPath(); ctx.moveTo(x,offsetY); ctx.lineTo(x,offsetY+6); ctx.stroke();
+		ctx.fillText(i, x, offsetY+16);
+	}
+
+	// Phase labels
+	ctx.font='bold 11px Segoe UI'; ctx.fillStyle='#dc2626'; ctx.textAlign='left';
+	ctx.fillText('Fase 1 (antes):', 10, 100);
+	ctx.fillStyle='#f59e0b'; ctx.fillText('Fase 2 (merge):', 10, 65);
+	ctx.fillStyle='#10b981'; ctx.fillText('Fase 3 (depois):', 200, 65);
+
+	// Draw input intervals
+	s.intervals.forEach((iv, idx) => {
+		const [start, end] = iv;
+		const x1 = offsetX + start*scale;
+		const x2 = offsetX + end*scale;
+		const width = x2-x1;
+		const y = 110 - idx*24;
+
+		let fill, stroke, alpha;
+		if (s.highlight===idx) { fill='#fef3c7'; stroke='#f59e0b'; alpha=1; }
+		else if (s.result.find(r=>r[0]===start && r[1]===end)) { fill='#dcfce7'; stroke='#16a34a'; alpha=1; }
+		else if (start >= s.mergedNI[1]) { fill='#e0f2fe'; stroke='#0284c7'; alpha=0.5; } // phase 3 (after)
+		else { fill='#e0f2fe'; stroke='#0284c7'; alpha=0.7; }
+
+		ctx.globalAlpha = alpha;
+		ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = 2;
+		ctx.fillRect(x1, y, width, 18);
+		ctx.strokeRect(x1, y, width, 18);
+		ctx.globalAlpha = 1;
+
+		ctx.font='bold 10px Segoe UI'; ctx.fillStyle='#1f2937'; ctx.textAlign='center';
+		ctx.fillText(`[${start},${end}]`, x1+width/2, y+12);
+	});
+
+	// Draw newInterval / merged newInterval
+	const ni = s.mergedNI;
+	const nix1 = offsetX + ni[0]*scale;
+	const nix2 = offsetX + ni[1]*scale;
+	const niwidth = nix2-nix1;
+	const niy = 30;
+
+	ctx.fillStyle='#fce7f3'; ctx.strokeStyle='#ec4899'; ctx.lineWidth=2.5;
+	ctx.fillRect(nix1, niy, niwidth, 18);
+	ctx.strokeRect(nix1, niy, niwidth, 18);
+
+	ctx.font='bold 10px Segoe UI'; ctx.fillStyle='#831843'; ctx.textAlign='center';
+	ctx.fillText(`NEW [${ni[0]},${ni[1]}]`, nix1+niwidth/2, niy+12);
+
+	// Draw result
+	if (s.result.length>0) {
+		ctx.font='11px Segoe UI'; ctx.fillStyle='#059669'; ctx.textAlign='left';
+		ctx.fillText('Result:', 10, 200);
+		s.result.forEach((iv, idx) => {
+			const [start, end] = iv;
+			const x1 = offsetX + start*scale;
+			const x2 = offsetX + end*scale;
+			const width = x2-x1;
+			const y = 200 - idx*18;
+
+			ctx.fillStyle='#dcfce7'; ctx.strokeStyle='#16a34a'; ctx.lineWidth=2;
+			ctx.fillRect(x1, y, width, 14);
+			ctx.strokeRect(x1, y, width, 14);
+
+			ctx.font='bold 9px Segoe UI'; ctx.fillStyle='#15803d'; ctx.textAlign='center';
+			ctx.fillText(`[${start},${end}]`, x1+width/2, y+10);
+		});
+	}
+}
+
+function updateIntervalsDisplay(s) {
+	const el = document.getElementById('intervalsDisplay');
+	el.innerHTML = '';
+
+	// Input intervals
+	const inputLabel = document.createElement('span');
+	inputLabel.style.fontWeight='700'; inputLabel.style.color='#c2410c'; inputLabel.textContent='Input: ';
+	el.appendChild(inputLabel);
+
+	s.intervals.forEach((iv, idx) => {
+		const item = document.createElement('span');
+		item.className = 'interval-item original';
+		if (s.highlight === idx) item.classList.add('highlighted');
+		item.textContent = `[${iv[0]},${iv[1]}]`;
+		el.appendChild(item);
+	});
+
+	// New interval
+	const newLabel = document.createElement('span');
+	newLabel.style.fontWeight='700'; newLabel.style.color='#c2410c'; newLabel.style.marginLeft='12px'; 
+	newLabel.textContent='New: ';
+	el.appendChild(newLabel);
+
+	const newItem = document.createElement('span');
+	newItem.className = 'interval-item new';
+	newItem.textContent = `[${s.mergedNI[0]},${s.mergedNI[1]}]`;
+	el.appendChild(newItem);
+
+	const sep = document.createElement('span');
+	sep.style.color='#9ca3af'; sep.textContent='→';
+	el.appendChild(sep);
+
+	// Result intervals
+	const resLabel = document.createElement('span');
+	resLabel.style.fontWeight='700'; resLabel.style.color='#c2410c'; resLabel.textContent='Result: ';
+	el.appendChild(resLabel);
+
+	if (s.result.length===0) {
+		const em = document.createElement('span');
+		em.style.color='#9ca3af'; em.textContent='(construindo...)';
+		el.appendChild(em);
+	} else {
+		s.result.forEach(iv => {
+			const item = document.createElement('span');
+			item.className = 'interval-item merged';
+			item.textContent = `[${iv[0]},${iv[1]}]`;
+			el.appendChild(item);
+		});
+	}
+}
+
+function renderStep(s) {
+	drawCanvas(s);
+	updateIntervalsDisplay(s);
+
+	// Update phase banner
+	const banner = document.getElementById('phaseBanner');
+	if (s.phase.startsWith('phase1')) { banner.className='phase-banner phase1'; banner.textContent='Fase 1: Intervalos antes de newInterval'; }
+	else if (s.phase.startsWith('phase2')) { banner.className='phase-banner phase2'; banner.textContent='Fase 2: Mesclando intervalos sobrepostos'; }
+	else if (s.phase.startsWith('phase3')) { banner.className='phase-banner phase3'; banner.textContent='Fase 3: Adicionando newInterval + intervalos depois'; }
+	else { banner.className='phase-banner done'; banner.textContent='✅ Concluido'; }
+
+	document.getElementById('eventLog').textContent = s.event;
+	document.getElementById('statIter').textContent = s.iter;
+	document.getElementById('statResult').textContent = s.result.length;
+
+	const pmap = {init:'Init', phase1_check:'Fase 1', phase1_add:'Fase 1', phase2_detect:'Fase 2', phase2_merge:'Fase 2', phase2_check:'Fase 2', phase3_detect:'Fase 3', phase3_final:'Fim'};
+	document.getElementById('statPhase').textContent = pmap[s.phase]||s.phase;
+
+	const smap = {init:1, phase1_check:1, phase1_add:1, phase2_detect:2, phase2_merge:2, phase2_check:2, phase3_detect:5, phase3_final:6};
+	for (let i=1;i<=6;i++) document.getElementById(`step${i}`).classList.remove('active');
+	if (smap[s.phase]) document.getElementById(`step${smap[s.phase]}`).classList.add('active');
+}
+
+function advance() {
+	if (stepIdx>=STEPS.length-1) {
+		renderStep(STEPS[STEPS.length-1]); clearInterval(intervalId); isRunning=false;
+		document.getElementById('startBtn').disabled=false; document.getElementById('pauseBtn').disabled=true; return;
+	}
+	stepIdx++; renderStep(STEPS[stepIdx]);
+}
+function startVisualization() {
+	if (stepIdx>=STEPS.length-1) resetVisualization();
+	isRunning=true; document.getElementById('startBtn').disabled=true; document.getElementById('pauseBtn').disabled=false;
+	intervalId = setInterval(advance, parseInt(document.getElementById('speedRange').value));
+}
+function pauseVisualization() {
+	isRunning=false; clearInterval(intervalId);
+	document.getElementById('startBtn').disabled=false; document.getElementById('pauseBtn').disabled=true;
+}
+function doStep() {
+	if (stepIdx>=STEPS.length-1) { resetVisualization(); return; }
+	if (isRunning) pauseVisualization(); advance();
+}
+function resetVisualization() {
+	clearInterval(intervalId); isRunning=false; stepIdx=0;
+	document.getElementById('startBtn').disabled=false; document.getElementById('pauseBtn').disabled=true;
+	renderStep(STEPS[0]);
+}
+document.getElementById('speedRange').addEventListener('input', function() {
+	document.getElementById('speedValue').textContent = this.value+'ms';
+	if (isRunning) { clearInterval(intervalId); intervalId = setInterval(advance, parseInt(this.value)); }
+});
+window.onload = function() { renderStep(STEPS[0]); };
+</script>
+</body>
+</html>
