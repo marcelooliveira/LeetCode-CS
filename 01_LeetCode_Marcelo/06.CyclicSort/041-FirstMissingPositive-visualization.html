@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>041 – First Missing Positive</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#7e22ce,#a855f7);min-height:100vh;padding:20px}
+    .container{max-width:1080px;margin:0 auto;background:#fff;border-radius:20px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    h1{color:#6b21a8;text-align:center;font-size:2em;margin-bottom:6px}
+    .subtitle{text-align:center;color:#64748b;margin-bottom:24px}
+    .explanation{background:#faf5ff;border-left:5px solid #a855f7;border-radius:10px;padding:18px;margin-bottom:24px}
+    .explanation h2{color:#6b21a8;margin-bottom:10px}
+    .explanation p{line-height:1.8;color:#334155;margin-bottom:6px}
+    code{background:#ede9fe;padding:1px 5px;border-radius:3px;font-family:'Courier New',monospace;color:#4c1d95;font-size:.92em}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:24px}
+    button{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;color:#fff}
+    #btnPlay{background:#7e22ce} #btnPlay:hover{background:#6b21a8}
+    #btnPause{background:#9333ea} #btnPause:hover{background:#7e22ce}
+    #btnStep{background:#a855f7} #btnStep:hover{background:#9333ea}
+    #btnReset{background:#64748b} #btnReset:hover{background:#475569}
+    button:disabled{background:#d1d5db!important;cursor:not-allowed}
+    .speed{display:flex;align-items:center;gap:8px;font-size:13px;color:#374151}
+    input[type=range]{width:120px;accent-color:#7e22ce}
+    .viz{background:#f8fafc;border:2px solid #ede9fe;border-radius:12px;padding:22px;margin-bottom:22px}
+    .viz h3{text-align:center;color:#6b21a8;margin-bottom:16px;font-size:1.05em}
+    canvas{display:block;margin:0 auto;border-radius:8px;border:1px solid #e2e8f0}
+    .event-log{margin-top:14px;background:#faf5ff;border-left:4px solid #a855f7;border-radius:8px;padding:12px 16px;font-size:14px;color:#4c1d95;min-height:46px;line-height:1.6}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+    .stat{background:linear-gradient(135deg,#7e22ce,#a855f7);color:#fff;padding:16px;border-radius:12px;text-align:center}
+    .stat .lbl{font-size:11px;opacity:.85;margin-bottom:4px}
+    .stat .val{font-size:1.4em;font-weight:800;font-family:'Courier New',monospace}
+    .algo{background:#f8fafc;padding:20px;border-radius:10px;margin-bottom:22px}
+    .algo h3{color:#6b21a8;margin-bottom:14px}
+    .step{padding:10px 14px;margin-bottom:8px;border-radius:8px;background:#fff;border-left:4px solid #e2e8f0;font-size:13.5px;line-height:1.6;transition:all .25s}
+    .step.active{border-left-color:#a855f7;background:#faf5ff;transform:translateX(4px)}
+    .num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#7e22ce;color:#fff;border-radius:50%;font-size:12px;font-weight:700;margin-right:8px;flex-shrink:0}
+    .complexity{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px}
+    .cx-card{background:#faf5ff;border-left:5px solid #a855f7;border-radius:10px;padding:16px}
+    .cx-card h3{color:#6b21a8;margin-bottom:8px}
+    .cx-card p{color:#374151;line-height:1.7}
+    .code{background:#1e1e1e;color:#d4d4d4;padding:20px;border-radius:10px;overflow-x:auto}
+    .code h3{color:#9cdcfe;margin-bottom:12px}
+    pre{font-family:'Courier New',monospace;font-size:13px;line-height:1.8}
+    .kw{color:#569cd6} .fn{color:#dcdcaa} .nb{color:#b5cea8} .cm{color:#6a9955} .cf{color:#c586c0}
+    @media(max-width:640px){.stats{grid-template-columns:1fr}.complexity{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>⭐ First Missing Positive</h1>
+  <p class="subtitle">Cyclic Sort + Scan — LeetCode 041</p>
+
+  <div class="explanation">
+    <h2>📖 Problema</h2>
+    <p>
+      Dado um array de inteiros (pode conter negativos, zeros, duplicatas), encontre o
+      <strong>menor inteiro positivo ausente</strong>. Deve ser O(n) tempo e O(1) espaço.
+    </p>
+    <p>
+      <strong>Teste:</strong> <code>FirstMissingPositiveTest()</code> &nbsp;→&nbsp;
+      entrada <code>[3, 4, -1, 1]</code>, esperado <code>2</code>
+    </p>
+    <p>
+      <strong>Ideia:</strong> <em>Cyclic Sort</em> — colocar cada número positivo <em>k</em>
+      na posição <em>k−1</em> (ignorar negativos e k ≥ n).
+      Depois varrer: primeiro índice <em>i</em> onde <code>nums[i] ≠ i+1</code> dá a resposta <code>i+1</code>.
+    </p>
+  </div>
+
+  <div class="controls">
+    <button id="btnPlay"  onclick="play()">▶ Iniciar</button>
+    <button id="btnPause" onclick="pause()" disabled>⏸ Pausar</button>
+    <button id="btnStep"  onclick="step()">⏭ Passo</button>
+    <button id="btnReset" onclick="reset()">↺ Resetar</button>
+    <div class="speed">
+      <label>Velocidade:</label>
+      <input type="range" id="spd" min="200" max="2000" value="900" step="100">
+      <span id="spdVal">900 ms</span>
+    </div>
+  </div>
+
+  <div class="viz">
+    <h3>Visualização — Cyclic Sort &amp; Scan</h3>
+    <canvas id="cv" width="680" height="250"></canvas>
+    <div class="event-log" id="log">Clique em ▶ Iniciar ou ⏭ Passo para começar.</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="lbl">Fase</div><div class="val" id="sPhase">—</div></div>
+    <div class="stat"><div class="lbl">Índice i</div><div class="val" id="sIdx">—</div></div>
+    <div class="stat"><div class="lbl">Resultado</div><div class="val" id="sResult">—</div></div>
+  </div>
+
+  <div class="algo">
+    <h3>🔍 Passos do Algoritmo</h3>
+    <div class="step" id="s1"><span class="num">1</span><strong>Fase 1 — Cyclic Sort:</strong> Para cada posição <code>i</code>, se <code>nums[i]</code> é positivo, menor que n e não está na posição correta, trocar com seu destino.</div>
+    <div class="step" id="s2"><span class="num">2</span><strong>i=0, temp=3:</strong> 3 deve estar em pos 2. nums[2]=−1 ≠ 3 → trocar pos 0 ↔ 2. Array: [−1, 4, 3, 1]. temp=−1 ≤ 0, parar.</div>
+    <div class="step" id="s3"><span class="num">3</span><strong>i=1, temp=4:</strong> condição <code>4 &lt; 4</code> é falsa (fora do range) → nenhuma troca.</div>
+    <div class="step" id="s4"><span class="num">4</span><strong>i=2, temp=3:</strong> nums[2]=3 == temp → já está correto → nenhuma troca.</div>
+    <div class="step" id="s5"><span class="num">5</span><strong>i=3, temp=1:</strong> 1 deve estar em pos 0. nums[0]=−1 ≠ 1 → trocar pos 3 ↔ 0. Array: [1, 4, 3, −1]. temp=−1 ≤ 0, parar.</div>
+    <div class="step" id="s6"><span class="num">6</span><strong>Fase 2 — Scan:</strong> [1, 4, 3, −1]. i=0: 1==1 ✓. i=1: 4≠2 ✗ → retornar i+1 = <strong>2</strong>.</div>
+  </div>
+
+  <div class="complexity">
+    <div class="cx-card"><h3>⏱ Tempo</h3><p><strong>O(n)</strong> — cyclic sort: cada elemento é movido no máximo uma vez. Scan: O(n). Total: O(n).</p></div>
+    <div class="cx-card"><h3>💾 Espaço</h3><p><strong>O(1)</strong> — ordenação in-place, sem estruturas auxiliares.</p></div>
+  </div>
+
+  <div class="code">
+    <h3>💻 C#</h3>
+    <pre><span class="kw">public int</span> <span class="fn">FirstMissingPositive</span>(<span class="kw">int</span>[] nums)
+{
+    <span class="kw">int</span> i, temp;
+    <span class="cm">// Fase 1: Cyclic Sort</span>
+    <span class="cf">for</span> (i = <span class="nb">0</span>; i &lt; nums.Length; i++)
+    {
+        temp = nums[i];
+        <span class="cf">while</span> (temp &gt; <span class="nb">0</span> &amp;&amp; temp &lt; nums.Length &amp;&amp; nums[temp - <span class="nb">1</span>] != temp)
+        {
+            nums[i] = nums[temp - <span class="nb">1</span>];
+            nums[temp - <span class="nb">1</span>] = temp;
+            temp = nums[i];
+        }
+    }
+    <span class="cm">// Fase 2: Scan</span>
+    <span class="cf">for</span> (i = <span class="nb">0</span>; i &lt; nums.Length; i++)
+        <span class="cf">if</span> (nums[i] != i + <span class="nb">1</span>) <span class="cf">break</span>;
+    <span class="cf">return</span> i + <span class="nb">1</span>;
+}</pre>
+  </div>
+</div>
+
+<script>
+// ─── EXACT TRACE ─────────────────────────────────────────────────────────────
+// Input: [3, 4, -1, 1]  (n=4)
+//
+// Cyclic Sort:
+//   i=0: temp=3, cond: 3>0 ✓ 3<4 ✓ nums[2]=-1≠3 ✓ → swap 0↔2 → [-1,4,3,1], temp=-1 → stop
+//   i=1: temp=4, cond: 4>0 ✓ 4<4 ✗ → skip
+//   i=2: temp=3, cond: 3>0 ✓ 3<4 ✓ nums[2]=3==3 ✗ → skip
+//   i=3: temp=1, cond: 1>0 ✓ 1<4 ✓ nums[0]=-1≠1 ✓ → swap 3↔0 → [1,4,3,-1], temp=-1 → stop
+// After sort: [1, 4, 3, -1]
+//
+// Scan:
+//   i=0: nums[0]=1 == 1 ✓
+//   i=1: nums[1]=4 ≠ 2 ✗ → break → return 2
+
+const STEPS = [
+  { phase:'init',      arr:[3,4,-1,1],  i:-1, swapA:-1, swapB:-1, scanI:-1, result:null,
+    event:'Início: nums = [3, 4, −1, 1]. Fase 1: colocar número k na posição k−1 (se válido).' },
+
+  { phase:'sort_check',arr:[3,4,-1,1],  i:0,  swapA:-1, swapB:-1, scanI:-1, result:null,
+    event:'i=0: temp = nums[0] = 3. Verificando: 3 > 0 ✓  3 < 4 ✓  nums[2] = −1 ≠ 3 ✓ → trocar 0 ↔ 2.' },
+  { phase:'sort_swap', arr:[-1,4,3,1],  i:0,  swapA:0,  swapB:2,  scanI:-1, result:null,
+    event:'Troca 0 ↔ 2 → [−1, 4, 3, 1]. Novo temp = nums[0] = −1. −1 ≤ 0 → sair do while.' },
+
+  { phase:'sort_check',arr:[-1,4,3,1],  i:1,  swapA:-1, swapB:-1, scanI:-1, result:null,
+    event:'i=1: temp = nums[1] = 4. Verificando: 4 < 4 é FALSO → condição não atendida → nenhuma troca.' },
+
+  { phase:'sort_check',arr:[-1,4,3,1],  i:2,  swapA:-1, swapB:-1, scanI:-1, result:null,
+    event:'i=2: temp = nums[2] = 3. Verificando: nums[2] = 3 == temp → já está na posição correta → nenhuma troca.' },
+
+  { phase:'sort_check',arr:[-1,4,3,1],  i:3,  swapA:-1, swapB:-1, scanI:-1, result:null,
+    event:'i=3: temp = nums[3] = 1. Verificando: 1 > 0 ✓  1 < 4 ✓  nums[0] = −1 ≠ 1 ✓ → trocar 3 ↔ 0.' },
+  { phase:'sort_swap', arr:[1,4,3,-1],  i:3,  swapA:3,  swapB:0,  scanI:-1, result:null,
+    event:'Troca 3 ↔ 0 → [1, 4, 3, −1]. Novo temp = nums[3] = −1. −1 ≤ 0 → sair do while.' },
+
+  { phase:'scan_start',arr:[1,4,3,-1],  i:-1, swapA:-1, swapB:-1, scanI:-1, result:null,
+    event:'Fase 1 concluída. Array: [1, 4, 3, −1]. Fase 2: procurar primeiro i com nums[i] ≠ i+1.' },
+
+  { phase:'scan_ok',   arr:[1,4,3,-1],  i:0,  swapA:-1, swapB:-1, scanI:0,  result:null,
+    event:'Scan i=0: nums[0] = 1. Esperado: 0+1 = 1. 1 == 1 ✓ → continuar.' },
+  { phase:'scan_found',arr:[1,4,3,-1],  i:1,  swapA:-1, swapB:-1, scanI:1,  result:2,
+    event:'Scan i=1: nums[1] = 4. Esperado: 1+1 = 2. 4 ≠ 2 ✗ → break! Retornar i+1 = 2.' },
+
+  { phase:'done',      arr:[1,4,3,-1],  i:1,  swapA:-1, swapB:-1, scanI:1,  result:2,
+    event:'✅ Concluído! FirstMissingPositive([3, 4, −1, 1]) = 2.' },
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let idx = 0, running = false, timer = null;
+
+// ─── DRAW ────────────────────────────────────────────────────────────────────
+const N = 4;
+const BOX_W = 80, BOX_H = 70, GAP = 22;
+
+function drawArray(ctx, arr, s, yBase) {
+  const totalW = N * BOX_W + (N - 1) * GAP;
+  const startX = (680 - totalW) / 2;
+
+  // "expected" labels on top
+  for (let i = 0; i < N; i++) {
+    const x = startX + i * (BOX_W + GAP);
+    ctx.font = '11px Segoe UI'; ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center';
+    ctx.fillText(`exp:${i + 1}`, x + BOX_W / 2, yBase - 8);
+  }
+
+  arr.forEach((v, i) => {
+    const x = startX + i * (BOX_W + GAP);
+    const isCurI   = s.i === i && (s.phase.startsWith('sort') || s.phase === 'init');
+    const isSwapA  = s.swapA === i;
+    const isSwapB  = s.swapB === i;
+    const isScanI  = s.scanI === i;
+    const isCorrect = v === i + 1;
+    const isDone   = s.phase === 'done';
+
+    let fill, stroke, lw;
+    if (isDone && isCorrect)         { fill = '#d1fae5'; stroke = '#10b981'; lw = 2.5; }
+    else if (isDone && !isCorrect)   { fill = '#fee2e2'; stroke = '#ef4444'; lw = 2.5; }
+    else if (isSwapA || isSwapB)     { fill = '#fef3c7'; stroke = '#f59e0b'; lw = 3; }
+    else if (isScanI && s.phase === 'scan_found') { fill = '#dcfce7'; stroke = '#22c55e'; lw = 3; }
+    else if (isScanI)                { fill = '#f0fdf4'; stroke = '#86efac'; lw = 2; }
+    else if (isCurI)                 { fill = '#faf5ff'; stroke = '#a855f7'; lw = 3; }
+    else if (isCorrect)              { fill = '#f0fdf4'; stroke = '#86efac'; lw = 1.5; }
+    else                             { fill = '#faf5ff'; stroke = '#c4b5fd'; lw = 1.5; }
+
+    ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = lw;
+    roundRect(ctx, x, yBase, BOX_W, BOX_H, 8); ctx.fill(); ctx.stroke();
+
+    // value
+    ctx.font = `bold 24px 'Courier New'`;
+    ctx.fillStyle = (isSwapA || isSwapB) ? '#92400e' : isCorrect ? '#15803d' : '#4c1d95';
+    ctx.textAlign = 'center';
+    ctx.fillText(v, x + BOX_W / 2, yBase + 44);
+
+    // index below
+    ctx.font = '12px Segoe UI'; ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center';
+    ctx.fillText(`[${i}]`, x + BOX_W / 2, yBase + BOX_H + 16);
+  });
+
+  // pointer arrow under current sort index
+  if (s.i >= 0 && s.i < N && s.phase.startsWith('sort')) {
+    const x = startX + s.i * (BOX_W + GAP) + BOX_W / 2;
+    ctx.fillStyle = '#a855f7'; ctx.font = '18px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('▲', x, yBase + BOX_H + 34);
+  }
+  // scan pointer
+  if (s.scanI >= 0) {
+    const x = startX + s.scanI * (BOX_W + GAP) + BOX_W / 2;
+    const color = s.phase === 'scan_found' ? '#16a34a' : '#a855f7';
+    ctx.fillStyle = color; ctx.font = '18px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('▲', x, yBase + BOX_H + 34);
+  }
+
+  // swap arrow between boxes
+  if (s.swapA >= 0 && s.swapB >= 0) {
+    const totalW2 = N * BOX_W + (N - 1) * GAP;
+    const sx2 = (680 - totalW2) / 2;
+    const xA = sx2 + s.swapA * (BOX_W + GAP) + BOX_W / 2;
+    const xB = sx2 + s.swapB * (BOX_W + GAP) + BOX_W / 2;
+    const arrowY = yBase + BOX_H / 2;
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(xA, arrowY); ctx.lineTo(xB, arrowY); ctx.stroke();
+    ctx.setLineDash([]);
+    // arrowheads
+    drawArrowHead(ctx, xA, arrowY, xB > xA ? -1 : 1, '#f59e0b');
+    drawArrowHead(ctx, xB, arrowY, xB > xA ? 1 : -1, '#f59e0b');
+  }
+}
+
+function drawArrowHead(ctx, x, y, dir, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x + dir * 10, y);
+  ctx.lineTo(x + dir * 2, y - 5);
+  ctx.lineTo(x + dir * 2, y + 5);
+  ctx.closePath(); ctx.fill();
+}
+
+function draw(s) {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+
+  // Phase label
+  const phaseLabel = s.phase.startsWith('sort') ? 'FASE 1: Cyclic Sort'
+                   : s.phase.startsWith('scan') ? 'FASE 2: Scan'
+                   : s.phase === 'done'          ? '✅ Concluído'
+                   : 'Inicializando';
+  ctx.font = 'bold 13px Segoe UI';
+  ctx.fillStyle = '#7e22ce'; ctx.textAlign = 'center';
+  ctx.fillText(phaseLabel, 340, 22);
+
+  // Array
+  drawArray(ctx, s.arr, s, 40);
+
+  // Legend
+  const legY = 195;
+  const items = [
+    { color:'#a855f7', label:'Ponteiro atual' },
+    { color:'#f59e0b', label:'Elementos trocados' },
+    { color:'#86efac', label:'Posição correta' },
+    { color:'#22c55e', label:'Encontrado (scan)' },
+  ];
+  ctx.font = '11px Segoe UI'; ctx.textAlign = 'left';
+  items.forEach((it, k) => {
+    const lx = 20 + k * 162;
+    ctx.fillStyle = it.color; ctx.fillRect(lx, legY, 12, 12);
+    ctx.fillStyle = '#64748b'; ctx.fillText(it.label, lx + 16, legY + 10);
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  const s = STEPS[idx];
+  draw(s);
+  document.getElementById('log').textContent = s.event;
+  const phMap = {
+    init:'Init', sort_check:'Sort', sort_swap:'Troca!',
+    scan_start:'Fase 2', scan_ok:'Scan ✓', scan_found:'Achado!', done:'Done'
+  };
+  document.getElementById('sPhase').textContent  = phMap[s.phase] || s.phase;
+  document.getElementById('sIdx').textContent    = s.i >= 0 ? s.i : '—';
+  document.getElementById('sResult').textContent = s.result !== null ? `✅ ${s.result}` : '—';
+
+  const algoMap = {
+    init:1, sort_check:null, sort_swap:null,
+    scan_start:6, scan_ok:6, scan_found:6, done:6
+  };
+  const sortStepMap = { 0:2, 1:3, 2:4, 3:5 };
+  let active = algoMap[s.phase];
+  if (s.phase === 'sort_check' || s.phase === 'sort_swap') active = sortStepMap[s.i] || 1;
+  for (let k = 1; k <= 6; k++) document.getElementById(`s${k}`).classList.toggle('active', k === active);
+}
+
+// ─── CONTROLS ────────────────────────────────────────────────────────────────
+function advance() {
+  if (idx >= STEPS.length - 1) { pause(); return; }
+  idx++; render();
+  if (idx >= STEPS.length - 1) pause();
+}
+function play() {
+  if (idx >= STEPS.length - 1) { idx = 0; render(); }
+  running = true;
+  document.getElementById('btnPlay').disabled = true;
+  document.getElementById('btnPause').disabled = false;
+  timer = setInterval(advance, +document.getElementById('spd').value);
+}
+function pause() {
+  running = false; clearInterval(timer);
+  document.getElementById('btnPlay').disabled = false;
+  document.getElementById('btnPause').disabled = true;
+}
+function step() {
+  if (running) pause();
+  if (idx >= STEPS.length - 1) { idx = 0; render(); return; }
+  idx++; render();
+}
+function reset() {
+  pause(); idx = 0; render();
+}
+document.getElementById('spd').oninput = function() {
+  document.getElementById('spdVal').textContent = this.value + ' ms';
+  if (running) { clearInterval(timer); timer = setInterval(advance, +this.value); }
+};
+window.onload = render;
+</script>
+</body>
+</html>

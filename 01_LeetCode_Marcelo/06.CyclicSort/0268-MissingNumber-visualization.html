@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>0268 – Missing Number</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#0e7490,#06b6d4);min-height:100vh;padding:20px}
+    .container{max-width:1080px;margin:0 auto;background:#fff;border-radius:20px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    h1{color:#0e7490;text-align:center;font-size:2em;margin-bottom:6px}
+    .subtitle{text-align:center;color:#64748b;margin-bottom:24px}
+    .explanation{background:#ecfeff;border-left:5px solid #06b6d4;border-radius:10px;padding:18px;margin-bottom:24px}
+    .explanation h2{color:#0e7490;margin-bottom:10px}
+    .explanation p{line-height:1.8;color:#334155;margin-bottom:6px}
+    code{background:#cffafe;padding:1px 5px;border-radius:3px;font-family:'Courier New',monospace;color:#164e63;font-size:.92em}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:24px}
+    button{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;color:#fff}
+    #btnPlay{background:#0e7490} #btnPlay:hover{background:#0891b2}
+    #btnPause{background:#0891b2} #btnPause:hover{background:#0e7490}
+    #btnStep{background:#06b6d4} #btnStep:hover{background:#0891b2}
+    #btnReset{background:#64748b} #btnReset:hover{background:#475569}
+    button:disabled{background:#d1d5db!important;cursor:not-allowed}
+    .speed{display:flex;align-items:center;gap:8px;font-size:13px;color:#374151}
+    input[type=range]{width:120px;accent-color:#0e7490}
+    .viz{background:#f8fafc;border:2px solid #cffafe;border-radius:12px;padding:22px;margin-bottom:22px}
+    .viz h3{text-align:center;color:#0e7490;margin-bottom:16px;font-size:1.05em}
+    canvas{display:block;margin:0 auto;border-radius:8px;border:1px solid #e2e8f0}
+    .event-log{margin-top:14px;background:#ecfeff;border-left:4px solid #06b6d4;border-radius:8px;padding:12px 16px;font-size:14px;color:#164e63;min-height:46px;line-height:1.6}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+    .stat{background:linear-gradient(135deg,#0e7490,#06b6d4);color:#fff;padding:16px;border-radius:12px;text-align:center}
+    .stat .lbl{font-size:11px;opacity:.85;margin-bottom:4px}
+    .stat .val{font-size:1.4em;font-weight:800;font-family:'Courier New',monospace}
+    .algo{background:#f8fafc;padding:20px;border-radius:10px;margin-bottom:22px}
+    .algo h3{color:#0e7490;margin-bottom:14px}
+    .step{padding:10px 14px;margin-bottom:8px;border-radius:8px;background:#fff;border-left:4px solid #e2e8f0;font-size:13.5px;line-height:1.6;transition:all .25s}
+    .step.active{border-left-color:#06b6d4;background:#ecfeff;transform:translateX(4px)}
+    .num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#0e7490;color:#fff;border-radius:50%;font-size:12px;font-weight:700;margin-right:8px;flex-shrink:0}
+    .complexity{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px}
+    .cx-card{background:#ecfeff;border-left:5px solid #06b6d4;border-radius:10px;padding:16px}
+    .cx-card h3{color:#0e7490;margin-bottom:8px}
+    .cx-card p{color:#374151;line-height:1.7}
+    .code{background:#1e1e1e;color:#d4d4d4;padding:20px;border-radius:10px;overflow-x:auto}
+    .code h3{color:#9cdcfe;margin-bottom:12px}
+    pre{font-family:'Courier New',monospace;font-size:13px;line-height:1.8}
+    .kw{color:#569cd6} .fn{color:#dcdcaa} .nb{color:#b5cea8} .cm{color:#6a9955} .cf{color:#c586c0}
+    @media(max-width:640px){.stats{grid-template-columns:1fr}.complexity{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🔢 Missing Number</h1>
+  <p class="subtitle">Somatório de Gauss — LeetCode 0268</p>
+
+  <div class="explanation">
+    <h2>📖 Problema</h2>
+    <p>
+      Um array de tamanho <code>n</code> contém <em>n</em> inteiros distintos do intervalo <code>[0, n]</code>.
+      Exatamente um número está faltando. Encontre-o.
+    </p>
+    <p>
+      <strong>Teste:</strong> <code>MissingNumberTest_1()</code> &nbsp;→&nbsp;
+      entrada <code>[3, 0, 1]</code>, esperado <code>2</code>
+    </p>
+    <p>
+      <strong>Ideia:</strong> a soma de <code>0 + 1 + … + n</code> é <code>n(n+1)/2</code>.
+      A diferença entre essa soma ideal e a soma real é o número faltante.
+      O código calcula isso em uma única passagem acumulando <code>(i+1) − nums[i]</code>.
+    </p>
+  </div>
+
+  <div class="controls">
+    <button id="btnPlay"  onclick="play()">▶ Iniciar</button>
+    <button id="btnPause" onclick="pause()" disabled>⏸ Pausar</button>
+    <button id="btnStep"  onclick="step()">⏭ Passo</button>
+    <button id="btnReset" onclick="reset()">↺ Resetar</button>
+    <div class="speed">
+      <label>Velocidade:</label>
+      <input type="range" id="spd" min="200" max="2000" value="900" step="100">
+      <span id="spdVal">900 ms</span>
+    </div>
+  </div>
+
+  <div class="viz">
+    <h3>Visualização — Somatório incremental</h3>
+    <canvas id="cv" width="680" height="230"></canvas>
+    <div class="event-log" id="log">Clique em ▶ Iniciar ou ⏭ Passo para começar.</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="lbl">Fase</div><div class="val" id="sPhase">—</div></div>
+    <div class="stat"><div class="lbl">Índice i</div><div class="val" id="sIdx">—</div></div>
+    <div class="stat"><div class="lbl">result</div><div class="val" id="sResult">0</div></div>
+  </div>
+
+  <div class="algo">
+    <h3>🔍 Passos do Algoritmo</h3>
+    <div class="step" id="s1"><span class="num">1</span><strong>Gauss:</strong> soma esperada de [0..n] = n×(n+1)/2. Para n=3: 3×4/2 = <strong>6</strong>.</div>
+    <div class="step" id="s2"><span class="num">2</span><strong>Loop:</strong> a cada iteração soma-se <code>(i+1) − nums[i]</code> ao acumulador <code>result</code>.</div>
+    <div class="step" id="s3"><span class="num">3</span><strong>i=0:</strong> (0+1) − nums[0] = 1 − 3 = <strong>−2</strong>. result = −2.</div>
+    <div class="step" id="s4"><span class="num">4</span><strong>i=1:</strong> (1+1) − nums[1] = 2 − 0 = <strong>+2</strong>. result = 0.</div>
+    <div class="step" id="s5"><span class="num">5</span><strong>i=2:</strong> (2+1) − nums[2] = 3 − 1 = <strong>+2</strong>. result = 2.</div>
+    <div class="step" id="s6"><span class="num">6</span><strong>Resultado:</strong> result = <strong>2</strong>. Número faltante no intervalo [0,3].</div>
+  </div>
+
+  <div class="complexity">
+    <div class="cx-card"><h3>⏱ Tempo</h3><p><strong>O(n)</strong> — uma única passagem pelo array.</p></div>
+    <div class="cx-card"><h3>💾 Espaço</h3><p><strong>O(1)</strong> — apenas a variável <code>result</code>.</p></div>
+  </div>
+
+  <div class="code">
+    <h3>💻 C#</h3>
+    <pre><span class="kw">public int</span> <span class="fn">MissingNumber</span>(<span class="kw">int</span>[] nums)
+{
+    <span class="kw">int</span> result = <span class="nb">0</span>;
+    <span class="cf">for</span> (<span class="kw">int</span> i = <span class="nb">0</span>; i &lt; nums.Length; ++i)
+        result += (i + <span class="nb">1</span>) - nums[i];
+    <span class="cf">return</span> result;
+}</pre>
+  </div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+// MissingNumberTest_1: nums=[3,0,1] → expected 2
+// i=0: (1)-(3)=-2  result=-2
+// i=1: (2)-(0)=+2  result=0
+// i=2: (3)-(1)=+2  result=2
+const NUMS = [3, 0, 1];
+const N = NUMS.length;
+
+const STEPS = [
+  { phase:'init',  i:-1, delta:null, result:0,
+    event:'Início: nums = [3, 0, 1]. Vamos somar (i+1) − nums[i] para cada i. result começa em 0.' },
+  { phase:'loop',  i:0,  delta:-2,   result:-2,
+    event:'i=0 → contribuição = (0+1) − nums[0] = 1 − 3 = −2.  result = 0 + (−2) = −2.' },
+  { phase:'loop',  i:1,  delta:+2,   result:0,
+    event:'i=1 → contribuição = (1+1) − nums[1] = 2 − 0 = +2.  result = −2 + 2 = 0.' },
+  { phase:'loop',  i:2,  delta:+2,   result:2,
+    event:'i=2 → contribuição = (2+1) − nums[2] = 3 − 1 = +2.  result = 0 + 2 = 2.' },
+  { phase:'done',  i:-1, delta:null, result:2,
+    event:'✅ Concluído!  O número faltante no intervalo [0, 3] é  2.' },
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let idx = 0, running = false, timer = null;
+
+// ─── DRAW ────────────────────────────────────────────────────────────────────
+function draw(s) {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // ── Array boxes ──────────────────────────────────────────────
+  const bW = 80, bH = 70, gap = 20;
+  const totalW = N * bW + (N - 1) * gap;
+  const startX = (W - totalW) / 2;
+  const startY = 30;
+
+  NUMS.forEach((v, i) => {
+    const x = startX + i * (bW + gap);
+    const isCurrent = s.i === i;
+    const isDone = s.phase === 'done';
+
+    // box fill
+    ctx.fillStyle = isDone ? '#d1fae5' : isCurrent ? '#fff7ed' : '#ecfeff';
+    ctx.strokeStyle = isDone ? '#10b981' : isCurrent ? '#f59e0b' : '#06b6d4';
+    ctx.lineWidth = isCurrent || isDone ? 3 : 1.5;
+    roundRect(ctx, x, startY, bW, bH, 8);
+    ctx.fill(); ctx.stroke();
+
+    // value
+    ctx.font = `bold 26px 'Courier New'`;
+    ctx.fillStyle = isDone ? '#065f46' : isCurrent ? '#92400e' : '#164e63';
+    ctx.textAlign = 'center';
+    ctx.fillText(v, x + bW / 2, startY + 44);
+
+    // index label
+    ctx.font = '12px Segoe UI';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(`[${i}]`, x + bW / 2, startY + bH + 16);
+  });
+
+  // current pointer arrow
+  if (s.i >= 0 && s.i < N) {
+    const x = startX + s.i * (bW + gap) + bW / 2;
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('▲', x, startY + bH + 34);
+  }
+
+  // ── Calculation table ────────────────────────────────────────
+  const tableY = 140;
+  const colW = [60, 80, 80, 90, 100];
+  const headers = ['i', 'nums[i]', '(i+1)', 'delta', 'result'];
+  const cols = [50, 120, 210, 300, 400];
+
+  // header row
+  ctx.fillStyle = '#0e7490';
+  ctx.font = 'bold 12px Segoe UI';
+  ctx.textAlign = 'center';
+  headers.forEach((h, c) => ctx.fillText(h, cols[c], tableY));
+
+  // separator
+  ctx.strokeStyle = '#a5f3fc';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(20, tableY + 6); ctx.lineTo(W - 20, tableY + 6); ctx.stroke();
+
+  // data rows
+  for (let r = 0; r < N; r++) {
+    const rowY = tableY + 20 + r * 22;
+    const isActive = s.i === r;
+    const isPast   = s.i > r || s.phase === 'done';
+
+    if (isActive) {
+      ctx.fillStyle = '#fff7ed';
+      ctx.fillRect(18, rowY - 14, W - 36, 20);
+    }
+
+    const ri = r;
+    const rNums = NUMS[r];
+    const rExp  = r + 1;
+    const rDelta = rExp - rNums;
+    let cumResult = 0;
+    for (let k = 0; k <= r; k++) cumResult += (k + 1) - NUMS[k];
+
+    const rowData = [ri, rNums, rExp, rDelta >= 0 ? `+${rDelta}` : `${rDelta}`, cumResult];
+    ctx.font = isPast || isActive ? 'bold 13px Courier New' : '13px Courier New';
+    ctx.fillStyle = isActive ? '#92400e' : isPast ? '#164e63' : '#94a3b8';
+    ctx.textAlign = 'center';
+    rowData.forEach((d, c) => ctx.fillText(d, cols[c], rowY));
+  }
+
+  // result highlight
+  if (s.phase === 'done') {
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 14px Segoe UI';
+    ctx.textAlign = 'right';
+    ctx.fillText(`🎯 Faltando: ${s.result}`, W - 24, tableY + 20 + N * 22 + 10);
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  const s = STEPS[idx];
+  draw(s);
+
+  document.getElementById('log').textContent = s.event;
+  document.getElementById('sPhase').textContent  = { init:'Init', loop:'Loop', done:'Done' }[s.phase] || s.phase;
+  document.getElementById('sIdx').textContent    = s.i >= 0 ? s.i : '—';
+  document.getElementById('sResult').textContent = s.result;
+
+  const stepMap = { init:1, done:6 };
+  const stepIdx2 = s.phase === 'loop' ? s.i + 3 : (stepMap[s.phase] || 1);
+  for (let k = 1; k <= 6; k++) document.getElementById(`s${k}`).classList.toggle('active', k === stepIdx2);
+}
+
+// ─── CONTROLS ────────────────────────────────────────────────────────────────
+function advance() {
+  if (idx >= STEPS.length - 1) { pause(); return; }
+  idx++; render();
+  if (idx >= STEPS.length - 1) pause();
+}
+function play() {
+  if (idx >= STEPS.length - 1) { idx = 0; render(); }
+  running = true;
+  document.getElementById('btnPlay').disabled = true;
+  document.getElementById('btnPause').disabled = false;
+  timer = setInterval(advance, +document.getElementById('spd').value);
+}
+function pause() {
+  running = false; clearInterval(timer);
+  document.getElementById('btnPlay').disabled = false;
+  document.getElementById('btnPause').disabled = true;
+}
+function step() {
+  if (running) pause();
+  if (idx >= STEPS.length - 1) { idx = 0; render(); return; }
+  idx++; render();
+}
+function reset() {
+  pause(); idx = 0; render();
+}
+document.getElementById('spd').oninput = function() {
+  document.getElementById('spdVal').textContent = this.value + ' ms';
+  if (running) { clearInterval(timer); timer = setInterval(advance, +this.value); }
+};
+window.onload = render;
+</script>
+</body>
+</html>

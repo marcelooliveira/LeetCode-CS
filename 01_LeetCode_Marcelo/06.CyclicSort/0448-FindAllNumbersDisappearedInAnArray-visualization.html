@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>0448 – Find All Numbers Disappeared In An Array</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#b91c1c,#ef4444);min-height:100vh;padding:20px}
+    .container{max-width:1080px;margin:0 auto;background:#fff;border-radius:20px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    h1{color:#991b1b;text-align:center;font-size:2em;margin-bottom:6px}
+    .subtitle{text-align:center;color:#64748b;margin-bottom:24px}
+    .explanation{background:#fff1f2;border-left:5px solid #ef4444;border-radius:10px;padding:18px;margin-bottom:24px}
+    .explanation h2{color:#991b1b;margin-bottom:10px}
+    .explanation p{line-height:1.8;color:#334155;margin-bottom:6px}
+    code{background:#ffe4e6;padding:1px 5px;border-radius:3px;font-family:'Courier New',monospace;color:#7c2d12;font-size:.92em}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:24px}
+    button{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;color:#fff}
+    #btnPlay{background:#b91c1c} #btnPlay:hover{background:#991b1b}
+    #btnPause{background:#dc2626} #btnPause:hover{background:#b91c1c}
+    #btnStep{background:#ef4444} #btnStep:hover{background:#dc2626}
+    #btnReset{background:#64748b} #btnReset:hover{background:#475569}
+    button:disabled{background:#d1d5db!important;cursor:not-allowed}
+    .speed{display:flex;align-items:center;gap:8px;font-size:13px;color:#374151}
+    input[type=range]{width:120px;accent-color:#b91c1c}
+    .viz{background:#f8fafc;border:2px solid #ffe4e6;border-radius:12px;padding:22px;margin-bottom:22px}
+    .viz h3{text-align:center;color:#991b1b;margin-bottom:16px;font-size:1.05em}
+    canvas{display:block;margin:0 auto;border-radius:8px;border:1px solid #e2e8f0}
+    .event-log{margin-top:14px;background:#fff1f2;border-left:4px solid #ef4444;border-radius:8px;padding:12px 16px;font-size:14px;color:#7c2d12;min-height:46px;line-height:1.6}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+    .stat{background:linear-gradient(135deg,#b91c1c,#ef4444);color:#fff;padding:16px;border-radius:12px;text-align:center}
+    .stat .lbl{font-size:11px;opacity:.85;margin-bottom:4px}
+    .stat .val{font-size:1.4em;font-weight:800;font-family:'Courier New',monospace}
+    .algo{background:#f8fafc;padding:20px;border-radius:10px;margin-bottom:22px}
+    .algo h3{color:#991b1b;margin-bottom:14px}
+    .step{padding:10px 14px;margin-bottom:8px;border-radius:8px;background:#fff;border-left:4px solid #e2e8f0;font-size:13.5px;line-height:1.6;transition:all .25s}
+    .step.active{border-left-color:#ef4444;background:#fff1f2;transform:translateX(4px)}
+    .num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#b91c1c;color:#fff;border-radius:50%;font-size:12px;font-weight:700;margin-right:8px;flex-shrink:0}
+    .complexity{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px}
+    .cx-card{background:#fff1f2;border-left:5px solid #ef4444;border-radius:10px;padding:16px}
+    .cx-card h3{color:#991b1b;margin-bottom:8px}
+    .cx-card p{color:#374151;line-height:1.7}
+    .code{background:#1e1e1e;color:#d4d4d4;padding:20px;border-radius:10px;overflow-x:auto}
+    .code h3{color:#9cdcfe;margin-bottom:12px}
+    pre{font-family:'Courier New',monospace;font-size:13px;line-height:1.8}
+    .kw{color:#569cd6} .fn{color:#dcdcaa} .nb{color:#b5cea8} .cm{color:#6a9955} .cf{color:#c586c0}
+    @media(max-width:640px){.stats{grid-template-columns:1fr}.complexity{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>📋 Find All Numbers Disappeared</h1>
+  <p class="subtitle">Sign Marking (in-place) — LeetCode 0448</p>
+
+  <div class="explanation">
+    <h2>📖 Problema</h2>
+    <p>
+      Array de tamanho <code>n</code> com inteiros em <code>[1, n]</code> — pode haver duplicatas.
+      Retornar todos os números de <code>1</code> a <code>n</code> que <strong>não aparecem</strong>.
+    </p>
+    <p>
+      <strong>Teste:</strong> <code>FindDisappearedNumbers_1()</code> &nbsp;→&nbsp;
+      entrada <code>[4, 3, 2, 7, 8, 2, 3, 1]</code>, esperado <code>[5, 6]</code>
+    </p>
+    <p>
+      <strong>Ideia:</strong> Para cada <code>num</code> encontrado, marcar <code>nums[|num|−1]</code> com sinal
+      negativo. Ao final, posições ainda positivas indicam números ausentes.
+    </p>
+  </div>
+
+  <div class="controls">
+    <button id="btnPlay"  onclick="play()">▶ Iniciar</button>
+    <button id="btnPause" onclick="pause()" disabled>⏸ Pausar</button>
+    <button id="btnStep"  onclick="step()">⏭ Passo</button>
+    <button id="btnReset" onclick="reset()">↺ Resetar</button>
+    <div class="speed">
+      <label>Velocidade:</label>
+      <input type="range" id="spd" min="200" max="2000" value="900" step="100">
+      <span id="spdVal">900 ms</span>
+    </div>
+  </div>
+
+  <div class="viz">
+    <h3>Visualização — Marca de Sinal &amp; Scan</h3>
+    <canvas id="cv" width="680" height="250"></canvas>
+    <div class="event-log" id="log">Clique em ▶ Iniciar ou ⏭ Passo para começar.</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="lbl">Fase</div><div class="val" id="sPhase">—</div></div>
+    <div class="stat"><div class="lbl">Índice i</div><div class="val" id="sIdx">—</div></div>
+    <div class="stat"><div class="lbl">Resultado</div><div class="val" id="sResult">—</div></div>
+  </div>
+
+  <div class="algo">
+    <h3>🔍 Passos do Algoritmo</h3>
+    <div class="step" id="s1"><span class="num">1</span><strong>Fase 1 — Mark:</strong> Para cada <code>i</code>, calcular <code>index = |nums[i]| − 1</code>. Se <code>nums[index] &gt; 0</code>, multiplicar por −1 (marcar como "visto").</div>
+    <div class="step" id="s2"><span class="num">2</span><strong>Usar |valor|:</strong> Como podemos visitar uma posição já negativa, usar valor absoluto para calcular o índice destino.</div>
+    <div class="step" id="s3"><span class="num">3</span><strong>Já marcado:</strong> Se <code>nums[index] &lt; 0</code>, a posição já foi visitada — apenas ignorar (número duplicado).</div>
+    <div class="step" id="s4"><span class="num">4</span><strong>Fase 2 — Scan:</strong> Varrer o array. Posição <code>i</code> com <code>nums[i] &gt; 0</code> significa que o número <code>i+1</code> nunca apareceu.</div>
+    <div class="step" id="s5"><span class="num">5</span><strong>Ex:</strong> Após marcar, <code>nums[4]=8&gt;0</code> → 5 ausente. <code>nums[5]=2&gt;0</code> → 6 ausente. Todas as demais posições são negativas.</div>
+    <div class="step" id="s6"><span class="num">6</span><strong>Resultado:</strong> <code>[5, 6]</code> — os únicos números de 1 a 8 que não aparecem em <code>[4,3,2,7,8,2,3,1]</code>.</div>
+  </div>
+
+  <div class="complexity">
+    <div class="cx-card"><h3>⏱ Tempo</h3><p><strong>O(n)</strong> — duas passagens lineares: marking + scan.</p></div>
+    <div class="cx-card"><h3>💾 Espaço</h3><p><strong>O(1)</strong> — in-place, sem estruturas auxiliares (a saída não conta).</p></div>
+  </div>
+
+  <div class="code">
+    <h3>💻 C#</h3>
+    <pre><span class="kw">public IList&lt;int&gt;</span> <span class="fn">FindDisappearedNumbers</span>(<span class="kw">int</span>[] nums)
+{
+    <span class="cm">// Fase 1: marcar posições visitadas com sinal negativo</span>
+    <span class="cf">for</span> (<span class="kw">int</span> i = <span class="nb">0</span>; i &lt; nums.Length; i++)
+    {
+        <span class="kw">var</span> index = Math.Abs(nums[i]) - <span class="nb">1</span>;
+        <span class="cf">if</span> (nums[index] &gt; <span class="nb">0</span>)
+            nums[index] *= -<span class="nb">1</span>;
+    }
+    <span class="cm">// Fase 2: posições positivas → números ausentes</span>
+    <span class="kw">var</span> result = <span class="cf">new</span> <span class="fn">List&lt;int&gt;</span>();
+    <span class="cf">for</span> (<span class="kw">int</span> i = <span class="nb">0</span>; i &lt; nums.Length; i++)
+        <span class="cf">if</span> (nums[i] &gt; <span class="nb">0</span>)
+            result.Add(i + <span class="nb">1</span>);
+    <span class="cf">return</span> result;
+}</pre>
+  </div>
+</div>
+
+<script>
+// ─── EXACT TRACE ─────────────────────────────────────────────────────────────
+// Input: [4, 3, 2, 7, 8, 2, 3, 1]  (n=8)
+//
+// Marking phase:
+//   i=0: num=4,   idx=3. nums[3]=7  >0 → nums[3]=-7.  arr=[4,3,2,-7,8,2,3,1]
+//   i=1: num=3,   idx=2. nums[2]=2  >0 → nums[2]=-2.  arr=[4,3,-2,-7,8,2,3,1]
+//   i=2: num=-2,  idx=1. nums[1]=3  >0 → nums[1]=-3.  arr=[4,-3,-2,-7,8,2,3,1]
+//   i=3: num=-7,  idx=6. nums[6]=3  >0 → nums[6]=-3.  arr=[4,-3,-2,-7,8,2,-3,1]
+//   i=4: num=8,   idx=7. nums[7]=1  >0 → nums[7]=-1.  arr=[4,-3,-2,-7,8,2,-3,-1]
+//   i=5: num=2,   idx=1. nums[1]=-3 <0 → skip.
+//   i=6: num=-3,  idx=2. nums[2]=-2 <0 → skip.
+//   i=7: num=-1,  idx=0. nums[0]=4  >0 → nums[0]=-4.  arr=[-4,-3,-2,-7,8,2,-3,-1]
+//
+// Scan:
+//   i=0..-3: negative → skip
+//   i=4: nums[4]=8  > 0 → add 5
+//   i=5: nums[5]=2  > 0 → add 6
+//   i=6,7: negative → skip
+// Result: [5, 6]
+
+const STEPS = [
+  { phase:'init',       i:-1, arr:[4,3,2,7,8,2,3,1],         srcI:-1, dstI:-1, skip:false, found:[],
+    event:'Início: nums=[4,3,2,7,8,2,3,1], n=8. Fase 1: para cada num, marcar nums[|num|−1] como negativo.' },
+
+  { phase:'mark',       i:0,  arr:[4,3,2,-7,8,2,3,1],        srcI:0,  dstI:3,  skip:false, found:[],
+    event:'i=0: num=4, index=|4|−1=3. nums[3]=7 > 0 → nums[3] × −1 = −7. Número 4 foi visto!' },
+  { phase:'mark',       i:1,  arr:[4,3,-2,-7,8,2,3,1],       srcI:1,  dstI:2,  skip:false, found:[],
+    event:'i=1: num=3, index=|3|−1=2. nums[2]=2 > 0 → nums[2] × −1 = −2. Número 3 foi visto!' },
+  { phase:'mark',       i:2,  arr:[4,-3,-2,-7,8,2,3,1],      srcI:2,  dstI:1,  skip:false, found:[],
+    event:'i=2: num=nums[2]=−2, |−2|=2, index=2−1=1. nums[1]=3 > 0 → nums[1] × −1 = −3. Número 2 foi visto!' },
+  { phase:'mark',       i:3,  arr:[4,-3,-2,-7,8,2,-3,1],     srcI:3,  dstI:6,  skip:false, found:[],
+    event:'i=3: num=nums[3]=−7, |−7|=7, index=7−1=6. nums[6]=3 > 0 → nums[6] × −1 = −3. Número 7 foi visto!' },
+  { phase:'mark',       i:4,  arr:[4,-3,-2,-7,8,2,-3,-1],    srcI:4,  dstI:7,  skip:false, found:[],
+    event:'i=4: num=8, index=8−1=7. nums[7]=1 > 0 → nums[7] × −1 = −1. Número 8 foi visto!' },
+  { phase:'skip',       i:5,  arr:[4,-3,-2,-7,8,2,-3,-1],    srcI:5,  dstI:1,  skip:true,  found:[],
+    event:'i=5: num=2, index=1. nums[1]=−3 < 0 → já marcado (duplicata de 2), ignorar.' },
+  { phase:'skip',       i:6,  arr:[4,-3,-2,-7,8,2,-3,-1],    srcI:6,  dstI:2,  skip:true,  found:[],
+    event:'i=6: num=nums[6]=−3, |−3|=3, index=2. nums[2]=−2 < 0 → já marcado (duplicata de 3), ignorar.' },
+  { phase:'mark',       i:7,  arr:[-4,-3,-2,-7,8,2,-3,-1],   srcI:7,  dstI:0,  skip:false, found:[],
+    event:'i=7: num=nums[7]=−1, |−1|=1, index=0. nums[0]=4 > 0 → nums[0] × −1 = −4. Número 1 foi visto!' },
+
+  { phase:'scan_start', i:-1, arr:[-4,-3,-2,-7,8,2,-3,-1],   srcI:-1, dstI:-1, skip:false, found:[],
+    event:'Fase 1 concluída. Array: [−4,−3,−2,−7,8,2,−3,−1]. Fase 2: posições positivas = números ausentes.' },
+
+  { phase:'scan_found', i:4,  arr:[-4,-3,-2,-7,8,2,-3,-1],   srcI:-1, dstI:-1, skip:false, found:[5],
+    event:'Scan i=4: nums[4]=8 > 0 → número 4+1=5 está faltando! Adicionar 5 ao resultado.' },
+  { phase:'scan_found', i:5,  arr:[-4,-3,-2,-7,8,2,-3,-1],   srcI:-1, dstI:-1, skip:false, found:[5,6],
+    event:'Scan i=5: nums[5]=2 > 0 → número 5+1=6 está faltando! Adicionar 6 ao resultado.' },
+
+  { phase:'done',       i:-1, arr:[-4,-3,-2,-7,8,2,-3,-1],   srcI:-1, dstI:-1, skip:false, found:[5,6],
+    event:'✅ Concluído! FindDisappearedNumbers([4,3,2,7,8,2,3,1]) = [5, 6].' },
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let idx = 0, running = false, timer = null;
+const N = 8;
+
+// ─── DRAW ────────────────────────────────────────────────────────────────────
+const BOX_W = 56, BOX_H = 60, GAP = 12;
+
+function draw(s) {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Phase label
+  const phaseLabel = (s.phase === 'init') ? 'Inicializando'
+    : (s.phase === 'mark')        ? 'FASE 1: Marcar (×−1)'
+    : (s.phase === 'skip')        ? 'FASE 1: Já marcado → ignorar'
+    : (s.phase === 'scan_start')  ? 'FASE 2: Scan'
+    : (s.phase === 'scan_found')  ? 'FASE 2: Número encontrado!'
+    : '✅ Concluído';
+  ctx.font = 'bold 13px Segoe UI';
+  ctx.fillStyle = '#991b1b'; ctx.textAlign = 'center';
+  ctx.fillText(phaseLabel, W / 2, 20);
+
+  // ── Array boxes ──────────────────────────────────────────
+  const totalW = N * BOX_W + (N - 1) * GAP;
+  const startX = (W - totalW) / 2;
+  const startY = 34;
+
+  s.arr.forEach((v, i) => {
+    const x = startX + i * (BOX_W + GAP);
+    const isSrc  = s.srcI === i;
+    const isDst  = s.dstI === i;
+    const isFound = s.found.includes(i + 1);
+    const isScanIdx = (s.phase === 'scan_found') && s.i === i;
+    const isNeg  = v < 0;
+    const isDone = s.phase === 'done';
+
+    let fill, stroke, lw;
+    if (isDone && isFound)      { fill='#fef9c3'; stroke='#eab308'; lw=3; }
+    else if (isDone && !isFound){ fill='#d1fae5'; stroke='#10b981'; lw=1.5; }
+    else if (isFound || isScanIdx) { fill='#fef9c3'; stroke='#eab308'; lw=3; }
+    else if (isDst && !s.skip)  { fill='#dcfce7'; stroke='#22c55e'; lw=3; }
+    else if (isDst && s.skip)   { fill='#fef3c7'; stroke='#f59e0b'; lw=2; }
+    else if (isSrc)             { fill='#fff1f2'; stroke='#ef4444'; lw=3; }
+    else if (isNeg)             { fill='#d1fae5'; stroke='#6ee7b7'; lw=1.5; }
+    else                        { fill='#fff1f2'; stroke='#fca5a5'; lw=1.5; }
+
+    ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = lw;
+    roundRect(ctx, x, startY, BOX_W, BOX_H, 7); ctx.fill(); ctx.stroke();
+
+    // sign indicator badge
+    if (isNeg && s.phase !== 'init') {
+      ctx.fillStyle = '#10b981'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('✓', x + BOX_W - 8, startY + 11);
+    }
+
+    // value
+    ctx.font = `bold 16px 'Courier New'`;
+    const fc = isNeg ? '#15803d' : isFound ? '#713f12' : '#991b1b';
+    ctx.fillStyle = fc; ctx.textAlign = 'center';
+    ctx.fillText(v, x + BOX_W / 2, startY + 36);
+
+    // index label below
+    ctx.font = '11px Segoe UI'; ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center';
+    ctx.fillText(`[${i}]`, x + BOX_W / 2, startY + BOX_H + 13);
+
+    // "missing" badge
+    if (isFound) {
+      ctx.fillStyle = '#eab308'; ctx.font = 'bold 10px Segoe UI'; ctx.textAlign = 'center';
+      ctx.fillText(`${i+1}?`, x + BOX_W / 2, startY + BOX_H + 27);
+    }
+  });
+
+  // Arrow: src → dst
+  if (s.srcI >= 0 && s.dstI >= 0) {
+    const xSrc = startX + s.srcI * (BOX_W + GAP) + BOX_W / 2;
+    const xDst = startX + s.dstI * (BOX_W + GAP) + BOX_W / 2;
+    const arrowY = startY + BOX_H / 2;
+    const color = s.skip ? '#f59e0b' : '#22c55e';
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(xSrc, arrowY); ctx.lineTo(xDst, arrowY); ctx.stroke();
+    ctx.setLineDash([]);
+    // arrowhead at dst
+    const dir = xDst >= xSrc ? 1 : -1;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(xDst, arrowY);
+    ctx.lineTo(xDst - dir * 9, arrowY - 4);
+    ctx.lineTo(xDst - dir * 9, arrowY + 4);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // ── Result panel ──────────────────────────────────────────
+  const panelY = startY + BOX_H + 46;
+
+  // Legend row
+  const legItems = [
+    { color:'#ef4444', label:'Elemento atual (src)' },
+    { color:'#22c55e', label:'Posição marcada (dst)' },
+    { color:'#10b981', label:'Negativo (visto)' },
+    { color:'#eab308', label:'Número faltando' },
+  ];
+  ctx.font = '11px Segoe UI'; ctx.textAlign = 'left';
+  legItems.forEach((it, k) => {
+    const lx = 10 + k * 165;
+    ctx.fillStyle = it.color; ctx.fillRect(lx, panelY, 11, 11);
+    ctx.fillStyle = '#64748b'; ctx.fillText(it.label, lx + 15, panelY + 9.5);
+  });
+
+  // Found list
+  if (s.found.length > 0) {
+    ctx.font = 'bold 13px Segoe UI';
+    ctx.fillStyle = '#991b1b'; ctx.textAlign = 'left';
+    ctx.fillText(`Faltando: [${s.found.join(', ')}]`, 10, panelY + 30);
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  const s = STEPS[idx];
+  draw(s);
+  document.getElementById('log').textContent = s.event;
+  const phMap = {
+    init:'Init', mark:'Marcando', skip:'Ignorando',
+    scan_start:'Fase 2', scan_found:'Achado!', done:'Done'
+  };
+  document.getElementById('sPhase').textContent  = phMap[s.phase] || s.phase;
+  document.getElementById('sIdx').textContent    = s.i >= 0 ? s.i : '—';
+  document.getElementById('sResult').textContent = s.found.length > 0
+    ? `[${s.found.join(',')}]` : '—';
+
+  const activeMap = {
+    init:1, mark:2, skip:3, scan_start:4, scan_found:5, done:6
+  };
+  const active = activeMap[s.phase] || 1;
+  for (let k = 1; k <= 6; k++) document.getElementById(`s${k}`).classList.toggle('active', k === active);
+}
+
+// ─── CONTROLS ────────────────────────────────────────────────────────────────
+function advance() {
+  if (idx >= STEPS.length - 1) { pause(); return; }
+  idx++; render();
+  if (idx >= STEPS.length - 1) pause();
+}
+function play() {
+  if (idx >= STEPS.length - 1) { idx = 0; render(); }
+  running = true;
+  document.getElementById('btnPlay').disabled = true;
+  document.getElementById('btnPause').disabled = false;
+  timer = setInterval(advance, +document.getElementById('spd').value);
+}
+function pause() {
+  running = false; clearInterval(timer);
+  document.getElementById('btnPlay').disabled = false;
+  document.getElementById('btnPause').disabled = true;
+}
+function step() {
+  if (running) pause();
+  if (idx >= STEPS.length - 1) { idx = 0; render(); return; }
+  idx++; render();
+}
+function reset() {
+  pause(); idx = 0; render();
+}
+document.getElementById('spd').oninput = function() {
+  document.getElementById('spdVal').textContent = this.value + ' ms';
+  if (running) { clearInterval(timer); timer = setInterval(advance, +this.value); }
+};
+window.onload = render;
+</script>
+</body>
+</html>
