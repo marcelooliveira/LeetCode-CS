@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizacao: 0116 - Populating Next Right Pointers In Each Node</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 { color: #0ea5e9; text-align: center; margin-bottom: 8px; font-size: 1.9em; }
+    .subtitle { text-align: center; color: #666; margin-bottom: 24px; font-size: 1.05em; }
+    .explanation {
+      background: #f0f9ff;
+      padding: 18px 22px;
+      border-radius: 10px;
+      margin-bottom: 26px;
+      border-left: 5px solid #0ea5e9;
+    }
+    .explanation h2 { color: #0ea5e9; margin-bottom: 10px; }
+    .explanation p { line-height: 1.8; color: #333; margin-bottom: 8px; }
+    .explanation code {
+      background: #e0f2fe; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; color: #0369a1;
+    }
+    .controls {
+      display: flex; gap: 12px; margin-bottom: 26px;
+      flex-wrap: wrap; justify-content: center; align-items: center;
+    }
+    button {
+      background: #0ea5e9; color: white; border: none;
+      padding: 11px 22px; border-radius: 8px; cursor: pointer;
+      font-size: 15px; font-weight: 600; transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(14,165,233,0.4);
+    }
+    button:hover { background: #0284c7; transform: translateY(-2px); }
+    button:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+    #stepBtn {
+      background: #8b5cf6;
+      box-shadow: 0 4px 15px rgba(139,92,246,0.4);
+    }
+    #stepBtn:hover { background: #7c3aed; }
+    #stepBtn:disabled { background: #ccc; box-shadow: none; }
+    .speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+    input[type="range"] { width: 120px; }
+
+    .progress-bar {
+      width: 100%; height: 22px; background: #e9ecef;
+      border-radius: 11px; overflow: hidden; margin-bottom: 20px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0ea5e9 0%, #8b5cf6 100%);
+      transition: width 0.3s;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: bold; font-size: 12px;
+    }
+
+    .step-info {
+      background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px;
+      padding: 14px 18px; margin-bottom: 24px; text-align: center;
+      font-size: 15px; color: #374151; min-height: 52px;
+    }
+    .step-info strong { color: #0ea5e9; }
+
+    .visualization {
+      background: #fafafa; padding: 20px; border-radius: 10px;
+      margin-bottom: 24px; border: 2px solid #e0f2fe;
+    }
+    .visualization h3 { text-align: center; color: #0ea5e9; margin-bottom: 16px; }
+
+    .legend {
+      display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; margin-bottom: 12px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+    .legend-dot {
+      width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent;
+    }
+
+    /* Tree canvas area */
+    #treeCanvas { display: block; margin: 0 auto; }
+
+    /* next-pointer table */
+    .next-table { margin-top: 22px; }
+    .next-table-label { font-weight: 700; color: #8b5cf6; font-size: 14px; margin-bottom: 8px; text-align: center; }
+    .next-grid {
+      display: flex; flex-direction: column; gap: 6px; align-items: center;
+    }
+    .next-row { display: flex; gap: 6px; align-items: center; }
+    .next-cell {
+      padding: 6px 12px; border-radius: 6px;
+      font-weight: 700; font-size: 14px;
+      border: 2px solid #8b5cf6; background: #ede9fe; color: #5b21b6;
+      min-width: 44px; text-align: center; transition: all 0.3s;
+    }
+    .next-cell.linked { background: #8b5cf6; color: white; }
+    .next-cell.null-cell { background: #f1f5f9; color: #94a3b8; border-color: #cbd5e1; }
+    .next-arrow { font-size: 18px; color: #f59e0b; font-weight: 900; }
+
+    .code-section {
+      background: #1e1e1e; border-radius: 10px; padding: 20px;
+      overflow-x: auto; margin-bottom: 20px;
+    }
+    .code-section pre { color: #d4d4d4; font-family: 'Courier New', monospace; font-size: 13.5px; line-height: 1.7; }
+    .code-kw { color: #569cd6; }
+    .code-type { color: #4ec9b0; }
+    .code-com { color: #6a9955; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>0116 - Populating Next Right Pointers In Each Node</h1>
+  <p class="subtitle">Algoritmo iterativo nível a nível sem espaço extra — padrão Tree BFS</p>
+
+  <div class="explanation">
+    <h2>Como funciona?</h2>
+    <p>Input de teste: árvore binária perfeita <code>[1, 2, 3, 4, 5, 6, 7]</code></p>
+    <p>O algoritmo percorre a árvore <strong>nível a nível</strong> usando o ponteiro <code>next</code> já existente. Para cada nível, itera pelos nós do nível via <code>cur = levelStart</code>:</p>
+    <p>• <code>cur.left.next = cur.right</code> (conecta filhos do mesmo pai)</p>
+    <p>• <code>cur.right.next = cur.next.left</code> (conecta filho direito ao filho esquerdo do próximo pai)</p>
+    <p>Resultado esperado: <code>1→#, 2→3→#, 4→5→6→7→#</code></p>
+    <p><strong>Complexidade:</strong> Tempo O(n) · Espaço O(1)</p>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn" onclick="play()">▶ Play</button>
+    <button id="stepBtn" onclick="stepFwd()">⏭ Step</button>
+    <button onclick="reset()">↺ Reset</button>
+    <div class="speed-control">
+      <span>Velocidade:</span>
+      <input type="range" id="speedRange" min="200" max="2000" value="900" step="100">
+      <span id="speedLabel">900ms</span>
+    </div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%">0%</div></div>
+
+  <div class="step-info" id="stepInfo">Pressione <strong>Play</strong> ou <strong>Step</strong> para começar.</div>
+
+  <div class="visualization">
+    <h3>Árvore Binária Perfeita</h3>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#e0f2fe;border-color:#0ea5e9;"></div> Normal</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fef3c7;border-color:#f59e0b;"></div> <code>cur</code> atual</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fce7f3;border-color:#ec4899;"></div> <code>levelStart</code></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#dcfce7;border-color:#16a34a;"></div> next ligado</div>
+    </div>
+
+    <svg id="treeCanvas" width="560" height="240" viewBox="0 0 560 240">
+      <!-- edges tree -->
+      <line stroke="#cbd5e1" stroke-width="2" x1="280" y1="40" x2="160" y2="120"/>
+      <line stroke="#cbd5e1" stroke-width="2" x1="280" y1="40" x2="400" y2="120"/>
+      <line stroke="#cbd5e1" stroke-width="2" x1="160" y1="120" x2="100" y2="200"/>
+      <line stroke="#cbd5e1" stroke-width="2" x1="160" y1="120" x2="220" y2="200"/>
+      <line stroke="#cbd5e1" stroke-width="2" x1="400" y1="120" x2="340" y2="200"/>
+      <line stroke="#cbd5e1" stroke-width="2" x1="400" y1="120" x2="460" y2="200"/>
+
+      <!-- next arrows (hidden by default, shown via JS) -->
+      <!-- level 1: 2->3 -->
+      <g id="arr2to3">
+        <line id="arr2to3-line" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="5,3" x1="182" y1="114" x2="378" y2="114" marker-end="url(#arrowOrange)"/>
+      </g>
+      <!-- level 2: 4->5 -->
+      <g id="arr4to5">
+        <line id="arr4to5-line" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="5,3" x1="122" y1="194" x2="198" y2="194" marker-end="url(#arrowOrange)"/>
+      </g>
+      <!-- level 2: 5->6 -->
+      <g id="arr5to6">
+        <line id="arr5to6-line" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="5,3" x1="242" y1="194" x2="318" y2="194" marker-end="url(#arrowOrange)"/>
+      </g>
+      <!-- level 2: 6->7 -->
+      <g id="arr6to7">
+        <line id="arr6to7-line" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="5,3" x1="362" y1="194" x2="438" y2="194" marker-end="url(#arrowOrange)"/>
+      </g>
+
+      <defs>
+        <marker id="arrowOrange" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#f59e0b"/>
+        </marker>
+      </defs>
+
+      <!-- nodes -->
+      <g id="n1">
+        <circle cx="280" cy="40" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="280" y="40" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">1</text>
+      </g>
+      <g id="n2">
+        <circle cx="160" cy="120" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="160" y="120" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">2</text>
+      </g>
+      <g id="n3">
+        <circle cx="400" cy="120" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="400" y="120" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">3</text>
+      </g>
+      <g id="n4">
+        <circle cx="100" cy="200" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="100" y="200" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">4</text>
+      </g>
+      <g id="n5">
+        <circle cx="220" cy="200" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="220" y="200" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">5</text>
+      </g>
+      <g id="n6">
+        <circle cx="340" cy="200" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="340" y="200" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">6</text>
+      </g>
+      <g id="n7">
+        <circle cx="460" cy="200" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="460" y="200" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">7</text>
+      </g>
+    </svg>
+
+    <!-- next pointers table -->
+    <div class="next-table">
+      <div class="next-table-label">Ponteiros next estabelecidos</div>
+      <div class="next-grid" id="nextGrid">
+        <div class="next-row">
+          <div class="next-cell null-cell" id="nc1">1</div>
+          <span class="next-arrow">→</span>
+          <div class="next-cell null-cell" id="nc1next">#</div>
+        </div>
+        <div class="next-row" id="level2row" style="opacity:0.3">
+          <div class="next-cell" id="nc2">2</div>
+          <span class="next-arrow">→</span>
+          <div class="next-cell null-cell" id="nc2next">?</div>
+          <span style="margin:0 6px;color:#cbd5e1">|</span>
+          <div class="next-cell" id="nc3">3</div>
+          <span class="next-arrow">→</span>
+          <div class="next-cell null-cell" id="nc3next">?</div>
+        </div>
+        <div class="next-row" id="level3row" style="opacity:0.3">
+          <div class="next-cell" id="nc4">4</div>
+          <span class="next-arrow">→</span>
+          <div class="next-cell null-cell" id="nc4next">?</div>
+          <span style="margin:0 6px;color:#cbd5e1">|</span>
+          <div class="next-cell" id="nc5">5</div>
+          <span class="next-arrow">→</span>
+          <div class="next-cell null-cell" id="nc5next">?</div>
+          <span style="margin:0 6px;color:#cbd5e1">|</span>
+          <div class="next-cell" id="nc6">6</div>
+          <span class="next-arrow">→</span>
+          <div class="next-cell null-cell" id="nc6next">?</div>
+          <span style="margin:0 6px;color:#cbd5e1">|</span>
+          <div class="next-cell" id="nc7">7</div>
+          <span class="next-arrow">→</span>
+          <div class="next-cell null-cell" id="nc7next">?</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-section">
+    <pre><span class="code-kw">public</span> <span class="code-type">TreeLinkNode</span> Connect(<span class="code-type">TreeLinkNode</span> root)
+{
+    <span class="code-type">TreeLinkNode</span> levelStart = root;
+    <span class="code-kw">while</span> (levelStart != <span class="code-kw">null</span>)            <span class="code-com">// ← itera níveis</span>
+    {
+        <span class="code-type">TreeLinkNode</span> cur = levelStart;
+        <span class="code-kw">while</span> (cur != <span class="code-kw">null</span>)                <span class="code-com">// ← itera nós do nível via next</span>
+        {
+            <span class="code-kw">if</span> (cur.left != <span class="code-kw">null</span>)
+                cur.left.next = cur.right;          <span class="code-com">// ← filhos do mesmo pai</span>
+            <span class="code-kw">if</span> (cur.right != <span class="code-kw">null</span> &amp;&amp; cur.next != <span class="code-kw">null</span>)
+                cur.right.next = cur.next.left;     <span class="code-com">// ← cruzamento entre pais</span>
+            cur = cur.next;
+        }
+        levelStart = levelStart.left;               <span class="code-com">// ← desce nível</span>
+    }
+    <span class="code-kw">return</span> root;
+}</pre>
+  </div>
+</div>
+
+<script>
+// ─── Steps ────────────────────────────────────────────────────────
+// Each step: { levelStart, cur, linkedArrows:[], linkedNexts:{}, activeLevel, info }
+const steps = [
+  {
+    levelStart: 1, cur: null, linkedArrows: [], linkedNexts: {},
+    level2: false, level3: false,
+    info: 'Início: <strong>levelStart = 1</strong> (raiz).'
+  },
+  {
+    levelStart: 1, cur: 1, linkedArrows: [], linkedNexts: {},
+    level2: false, level3: false,
+    info: '<strong>cur = levelStart = 1</strong>. Nó 1 tem filhos (2, 3).'
+  },
+  {
+    levelStart: 1, cur: 1, linkedArrows: [], linkedNexts: { n2: '3', n3: '#' },
+    level2: true, level3: false,
+    info: '<code>cur.left.next = cur.right</code> → <strong>2.next = 3</strong>. <code>cur.right.next</code>: cur.next é null → não aplica.'
+  },
+  {
+    levelStart: 2, cur: null, linkedArrows: ['arr2to3'], linkedNexts: { n2: '3', n3: '#' },
+    level2: true, level3: false,
+    info: '<strong>cur = cur.next = null</strong>. Nível 1 completo. <strong>levelStart = levelStart.left = 2</strong>.'
+  },
+  {
+    levelStart: 2, cur: 2, linkedArrows: ['arr2to3'], linkedNexts: { n2: '3', n3: '#' },
+    level2: true, level3: false,
+    info: '<strong>cur = levelStart = 2</strong>. Nó 2 tem filhos (4, 5).'
+  },
+  {
+    levelStart: 2, cur: 2, linkedArrows: ['arr2to3', 'arr4to5'], linkedNexts: { n2: '3', n3: '#', n4: '5', n5: '6', n6: '7', n7: '#' },
+    level2: true, level3: true,
+    info: '<code>cur.left.next = cur.right</code> → <strong>4.next = 5</strong>. <code>cur.right.next = cur.next.left</code> → <strong>5.next = 6</strong>.'
+  },
+  {
+    levelStart: 2, cur: 3, linkedArrows: ['arr2to3', 'arr4to5', 'arr5to6'], linkedNexts: { n2: '3', n3: '#', n4: '5', n5: '6', n6: '7', n7: '#' },
+    level2: true, level3: true,
+    info: '<strong>cur = cur.next = 3</strong>. <code>cur.left.next = cur.right</code> → <strong>6.next = 7</strong>. cur.next é null → 7.next = null (#).'
+  },
+  {
+    levelStart: 4, cur: null, linkedArrows: ['arr2to3', 'arr4to5', 'arr5to6', 'arr6to7'], linkedNexts: { n2: '3', n3: '#', n4: '5', n5: '6', n6: '7', n7: '#' },
+    level2: true, level3: true,
+    info: '<strong>cur = null</strong>. Nível 2 completo. <strong>levelStart = levelStart.left = 4</strong>.'
+  },
+  {
+    levelStart: 4, cur: 4, linkedArrows: ['arr2to3', 'arr4to5', 'arr5to6', 'arr6to7'], linkedNexts: { n2: '3', n3: '#', n4: '5', n5: '6', n6: '7', n7: '#' },
+    level2: true, level3: true,
+    info: '<strong>cur = 4</strong>. Nó 4 não tem filhos (folha) → nada a ligar. cur = cur.next = 5...'
+  },
+  {
+    levelStart: null, cur: null, linkedArrows: ['arr2to3', 'arr4to5', 'arr5to6', 'arr6to7'], linkedNexts: { n2: '3', n3: '#', n4: '5', n5: '6', n6: '7', n7: '#' },
+    level2: true, level3: true,
+    info: '✅ <strong>levelStart.left = null</strong> → loop encerra. Todos os ponteiros next estão conectados!'
+  },
+];
+
+const ALL_ARROWS = ['arr2to3','arr4to5','arr5to6','arr6to7'];
+const NODE_IDS = [1,2,3,4,5,6,7];
+
+let current = 0;
+let timer = null;
+
+function setNode(id, state) {
+  const g = document.getElementById('n' + id);
+  if (!g) return;
+  const c = g.querySelector('circle');
+  const t = g.querySelector('text');
+  if (state === 'cur') {
+    c.setAttribute('fill','#fef3c7'); c.setAttribute('stroke','#f59e0b');
+    t.setAttribute('fill','#92400e');
+  } else if (state === 'levelStart') {
+    c.setAttribute('fill','#fce7f3'); c.setAttribute('stroke','#ec4899');
+    t.setAttribute('fill','#831843');
+  } else if (state === 'linked') {
+    c.setAttribute('fill','#dcfce7'); c.setAttribute('stroke','#16a34a');
+    t.setAttribute('fill','#14532d');
+  } else {
+    c.setAttribute('fill','#e0f2fe'); c.setAttribute('stroke','#0ea5e9');
+    t.setAttribute('fill','#0369a1');
+  }
+}
+
+function render(idx) {
+  const s = steps[idx];
+
+  // nodes
+  NODE_IDS.forEach(id => {
+    let state = 'normal';
+    if (s.linkedArrows.length > 0) state = 'linked'; // not perfect but good visual
+    if (id === s.cur) state = 'cur';
+    if (id === s.levelStart) state = 'levelStart';
+    // if cur and levelStart same node, cur wins
+    setNode(id, state);
+  });
+
+  // arrows
+  ALL_ARROWS.forEach(a => {
+    const el = document.getElementById(a);
+    if (el) el.style.opacity = s.linkedArrows.includes(a) ? '1' : '0';
+  });
+
+  // next table cells
+  document.getElementById('level2row').style.opacity = s.level2 ? '1' : '0.3';
+  document.getElementById('level3row').style.opacity = s.level3 ? '1' : '0.3';
+
+  const nmap = s.linkedNexts || {};
+  [2,3,4,5,6,7].forEach(id => {
+    const cell = document.getElementById('nc' + id + 'next');
+    if (!cell) return;
+    if (nmap['n'+id] !== undefined) {
+      cell.textContent = nmap['n'+id];
+      cell.className = 'next-cell ' + (nmap['n'+id] === '#' ? 'null-cell' : 'linked');
+    } else {
+      cell.textContent = '?';
+      cell.className = 'next-cell null-cell';
+    }
+  });
+
+  document.getElementById('stepInfo').innerHTML = s.info;
+
+  const pct = Math.round(idx / (steps.length - 1) * 100);
+  const pf = document.getElementById('progressFill');
+  pf.style.width = pct + '%';
+  pf.textContent = pct + '%';
+
+  document.getElementById('stepBtn').disabled = idx >= steps.length - 1;
+  document.getElementById('playBtn').disabled = idx >= steps.length - 1;
+}
+
+function stepFwd() {
+  if (current < steps.length - 1) { current++; render(current); }
+}
+
+function play() {
+  if (timer) return;
+  document.getElementById('playBtn').disabled = true;
+  const speed = parseInt(document.getElementById('speedRange').value);
+  timer = setInterval(() => {
+    if (current < steps.length - 1) { current++; render(current); }
+    else { clearInterval(timer); timer = null; }
+  }, speed);
+}
+
+function reset() {
+  clearInterval(timer); timer = null;
+  current = 0; render(0);
+  document.getElementById('playBtn').disabled = false;
+}
+
+document.getElementById('speedRange').addEventListener('input', function() {
+  document.getElementById('speedLabel').textContent = this.value + 'ms';
+  if (timer) { clearInterval(timer); timer = null; play(); }
+});
+
+// hide arrows initially
+ALL_ARROWS.forEach(a => {
+  const el = document.getElementById(a);
+  if (el) el.style.opacity = '0';
+});
+
+render(0);
+</script>
+</body>
+</html>

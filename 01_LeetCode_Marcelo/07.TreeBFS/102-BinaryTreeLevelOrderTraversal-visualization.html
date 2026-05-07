@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizacao: 102 - Binary Tree Level Order Traversal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 { color: #0ea5e9; text-align: center; margin-bottom: 8px; font-size: 2em; }
+    .subtitle { text-align: center; color: #666; margin-bottom: 24px; font-size: 1.05em; }
+    .explanation {
+      background: #f0f9ff;
+      padding: 18px 22px;
+      border-radius: 10px;
+      margin-bottom: 26px;
+      border-left: 5px solid #0ea5e9;
+    }
+    .explanation h2 { color: #0ea5e9; margin-bottom: 10px; }
+    .explanation p { line-height: 1.8; color: #333; margin-bottom: 8px; }
+    .explanation code {
+      background: #e0f2fe; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; color: #0369a1;
+    }
+    .controls {
+      display: flex; gap: 12px; margin-bottom: 26px;
+      flex-wrap: wrap; justify-content: center; align-items: center;
+    }
+    button {
+      background: #0ea5e9; color: white; border: none;
+      padding: 11px 22px; border-radius: 8px; cursor: pointer;
+      font-size: 15px; font-weight: 600; transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(14,165,233,0.4);
+    }
+    button:hover { background: #0284c7; transform: translateY(-2px); }
+    button:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+    #stepBtn {
+      background: #8b5cf6;
+      box-shadow: 0 4px 15px rgba(139,92,246,0.4);
+    }
+    #stepBtn:hover { background: #7c3aed; }
+    #stepBtn:disabled { background: #ccc; box-shadow: none; }
+    .speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+    input[type="range"] { width: 120px; }
+
+    .visualization {
+      background: #fafafa; padding: 20px; border-radius: 10px;
+      margin-bottom: 24px; border: 2px solid #e0f2fe;
+    }
+    .visualization h3 { text-align: center; color: #0ea5e9; margin-bottom: 18px; }
+
+    /* Tree SVG */
+    #treeSvg { display: block; margin: 0 auto 10px; }
+    .tree-edge { stroke: #cbd5e1; stroke-width: 2; }
+    .tree-node circle {
+      stroke-width: 2.5;
+      transition: all 0.4s;
+    }
+    .tree-node text { font-size: 14px; font-weight: 700; dominant-baseline: central; text-anchor: middle; }
+
+    /* Queue strip */
+    .queue-area { margin-top: 16px; }
+    .queue-label { font-weight: 700; color: #0ea5e9; font-size: 14px; margin-bottom: 6px; text-align: center; }
+    .queue-strip {
+      display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; min-height: 44px;
+    }
+    .queue-box {
+      width: 40px; height: 40px; border-radius: 8px; display: flex;
+      align-items: center; justify-content: center; font-weight: 700;
+      font-size: 16px; border: 2px solid #0ea5e9; background: #e0f2fe; color: #0369a1;
+      transition: all 0.3s;
+    }
+    .queue-box.front { border-color: #f59e0b; background: #fef3c7; color: #92400e; }
+
+    /* Result levels */
+    .result-area { margin-top: 20px; }
+    .result-label { font-weight: 700; color: #8b5cf6; font-size: 14px; margin-bottom: 8px; text-align: center; }
+    .result-levels { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+    .result-level {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .level-tag {
+      font-size: 12px; color: #6b7280; font-weight: 600; width: 60px; text-align: right;
+    }
+    .result-box {
+      padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 15px;
+      background: #ede9fe; color: #5b21b6; border: 2px solid #8b5cf6;
+      transition: all 0.4s;
+    }
+    .result-box.new { background: #8b5cf6; color: white; }
+
+    /* Step info */
+    .step-info {
+      background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px;
+      padding: 14px 18px; margin-bottom: 24px; text-align: center;
+      font-size: 15px; color: #374151; min-height: 52px;
+    }
+    .step-info strong { color: #0ea5e9; }
+
+    /* Progress */
+    .progress-bar {
+      width: 100%; height: 22px; background: #e9ecef;
+      border-radius: 11px; overflow: hidden; margin-bottom: 20px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0ea5e9 0%, #8b5cf6 100%);
+      transition: width 0.3s;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: bold; font-size: 12px;
+    }
+
+    .legend {
+      display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+    .legend-dot {
+      width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent;
+    }
+
+    .code-section {
+      background: #1e1e1e; border-radius: 10px; padding: 20px;
+      overflow-x: auto; margin-bottom: 20px;
+    }
+    .code-section pre { color: #d4d4d4; font-family: 'Courier New', monospace; font-size: 13.5px; line-height: 1.7; }
+    .code-kw { color: #569cd6; }
+    .code-type { color: #4ec9b0; }
+    .code-com { color: #6a9955; }
+    .code-str { color: #ce9178; }
+    .code-num { color: #b5cea8; }
+    .hl { background: rgba(255,255,0,0.15); border-left: 3px solid #f59e0b; padding-left: 4px; display: block; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>102 - Binary Tree Level Order Traversal</h1>
+  <p class="subtitle">Algoritmo BFS (Breadth-First Search) com Queue — padrão Tree BFS</p>
+
+  <div class="explanation">
+    <h2>Como funciona?</h2>
+    <p>Dado o input de teste: <code>[3, 9, 20, null, null, 15, 7]</code></p>
+    <p>A árvore tem raiz <code>3</code>, filho esquerdo <code>9</code> e filho direito <code>20</code>. O nó <code>20</code> tem filhos <code>15</code> e <code>7</code>.</p>
+    <p>O algoritmo usa uma <strong>Queue (fila)</strong>. A cada iteração do laço externo, processa todos os nós do nível atual (tamanho da fila), adicionando os filhos para o próximo nível. O resultado esperado é: <code>[[3], [9, 20], [15, 7]]</code>.</p>
+    <p><strong>Complexidade:</strong> Tempo O(n) · Espaço O(n)</p>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn" onclick="play()">▶ Play</button>
+    <button id="stepBtn" onclick="stepFwd()">⏭ Step</button>
+    <button onclick="reset()">↺ Reset</button>
+    <div class="speed-control">
+      <span>Velocidade:</span>
+      <input type="range" id="speedRange" min="200" max="2000" value="900" step="100">
+      <span id="speedLabel">900ms</span>
+    </div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%">0%</div></div>
+
+  <div class="step-info" id="stepInfo">Pressione <strong>Play</strong> ou <strong>Step</strong> para começar.</div>
+
+  <div class="visualization">
+    <h3>Árvore Binária</h3>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#e0f2fe;border-color:#0ea5e9;"></div> Normal</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fef3c7;border-color:#f59e0b;"></div> Processando agora</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#dcfce7;border-color:#16a34a;"></div> Já visitado</div>
+    </div>
+    <svg id="treeSvg" width="460" height="200" viewBox="0 0 460 200">
+      <!-- edges -->
+      <line class="tree-edge" x1="230" y1="40" x2="130" y2="110"/>
+      <line class="tree-edge" x1="230" y1="40" x2="330" y2="110"/>
+      <line class="tree-edge" x1="330" y1="110" x2="280" y2="180"/>
+      <line class="tree-edge" x1="330" y1="110" x2="380" y2="180"/>
+      <!-- nodes -->
+      <g class="tree-node" id="node3">
+        <circle cx="230" cy="40" r="22" fill="#e0f2fe" stroke="#0ea5e9"/>
+        <text x="230" y="40" fill="#0369a1">3</text>
+      </g>
+      <g class="tree-node" id="node9">
+        <circle cx="130" cy="110" r="22" fill="#e0f2fe" stroke="#0ea5e9"/>
+        <text x="130" y="110" fill="#0369a1">9</text>
+      </g>
+      <g class="tree-node" id="node20">
+        <circle cx="330" cy="110" r="22" fill="#e0f2fe" stroke="#0ea5e9"/>
+        <text x="330" y="110" fill="#0369a1">20</text>
+      </g>
+      <g class="tree-node" id="node15">
+        <circle cx="280" cy="180" r="22" fill="#e0f2fe" stroke="#0ea5e9"/>
+        <text x="280" y="180" fill="#0369a1">15</text>
+      </g>
+      <g class="tree-node" id="node7">
+        <circle cx="380" cy="180" r="22" fill="#e0f2fe" stroke="#0ea5e9"/>
+        <text x="380" y="180" fill="#0369a1">7</text>
+      </g>
+    </svg>
+
+    <div class="queue-area">
+      <div class="queue-label">Queue (Fila)</div>
+      <div class="queue-strip" id="queueStrip"></div>
+    </div>
+
+    <div class="result-area">
+      <div class="result-label">Resultado (por nível)</div>
+      <div class="result-levels" id="resultLevels"></div>
+    </div>
+  </div>
+
+  <div class="code-section">
+    <pre id="codeBlock"><span class="code-kw">public</span> <span class="code-type">IList</span>&lt;<span class="code-type">IList</span>&lt;<span class="code-kw">int</span>&gt;&gt; LevelOrder(<span class="code-type">TreeNode</span> root)
+{
+    <span class="code-kw">var</span> results = <span class="code-kw">new</span> <span class="code-type">List</span>&lt;<span class="code-type">IList</span>&lt;<span class="code-kw">int</span>&gt;&gt;();
+    <span class="code-kw">if</span> (root == <span class="code-kw">null</span>) <span class="code-kw">return</span> results;
+    queue.Enqueue(root);                         <span id="cL1" class="code-com">// ← enfileira raiz</span>
+
+    <span class="code-kw">while</span>(queue.Count &gt; <span class="code-num">0</span>)                     <span id="cL2" class="code-com">// ← laço de nível</span>
+    {
+        <span class="code-kw">var</span> result = <span class="code-kw">new</span> <span class="code-type">List</span>&lt;<span class="code-kw">int</span>&gt;();
+        <span class="code-kw">var</span> levelSize = queue.Count;             <span id="cL3" class="code-com">// ← tamanho do nível</span>
+        <span class="code-kw">for</span> (<span class="code-kw">int</span> i = <span class="code-num">0</span>; i &lt; levelSize; i++)
+        {
+            <span class="code-kw">var</span> node = queue.Dequeue();           <span id="cL4" class="code-com">// ← processa nó</span>
+            result.Add(node.val);
+            <span class="code-kw">if</span> (node.left != <span class="code-kw">null</span>)              <span id="cL5" class="code-com">// ← enfileira filhos</span>
+                queue.Enqueue(node.left);
+            <span class="code-kw">if</span> (node.right != <span class="code-kw">null</span>)
+                queue.Enqueue(node.right);
+        }
+        results.Add(result);                     <span id="cL6" class="code-com">// ← salva nível</span>
+    }
+    <span class="code-kw">return</span> results;
+}</pre>
+  </div>
+</div>
+
+<script>
+// ─── Tree structure ───────────────────────────────────────────────
+const NODES = {
+  3:  { id:'node3',  val:3,  left:9,  right:20 },
+  9:  { id:'node9',  val:9,  left:null, right:null },
+  20: { id:'node20', val:20, left:15, right:7 },
+  15: { id:'node15', val:15, left:null, right:null },
+  7:  { id:'node7',  val:7,  left:null, right:null },
+};
+
+// ─── Build steps ─────────────────────────────────────────────────
+function buildSteps() {
+  const steps = [];
+  const queue = [3];
+  const visited = new Set();
+  const result = [];
+
+  steps.push({ queue: [...queue], visited: new Set(visited), result: [], active: null,
+    info: 'Iniciando: enfileira a raiz <strong>3</strong>.' });
+
+  while (queue.length > 0) {
+    const levelSize = queue.length;
+    const levelVals = [];
+
+    steps.push({ queue: [...queue], visited: new Set(visited), result: result.map(r=>[...r]), active: null,
+      info: `Novo nível: <strong>levelSize = ${levelSize}</strong> (${queue.join(', ')})` });
+
+    for (let i = 0; i < levelSize; i++) {
+      const val = queue.shift();
+      visited.add(val);
+      levelVals.push(val);
+      const node = NODES[val];
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+
+      steps.push({ queue: [...queue], visited: new Set(visited), result: result.map(r=>[...r]),
+        active: val,
+        info: `Dequeue <strong>${val}</strong>${node.left||node.right ? ` → enfileira filhos: ${[node.left,node.right].filter(Boolean).join(', ')}` : ' (folha, sem filhos)'}.`
+      });
+    }
+    result.push([...levelVals]);
+    steps.push({ queue: [...queue], visited: new Set(visited), result: result.map(r=>[...r]), active: null,
+      info: `Nível completo: <strong>[${levelVals.join(', ')}]</strong> adicionado ao resultado.` });
+  }
+
+  steps.push({ queue: [], visited: new Set(visited), result: result.map(r=>[...r]), active: null,
+    info: `✅ Concluído! Resultado: <strong>[[${result.map(r=>r.join(',')).join('], [')}]]</strong>` });
+
+  return steps;
+}
+
+const steps = buildSteps();
+let current = 0;
+let timer = null;
+
+function setNodeStyle(id, state) {
+  const g = document.getElementById(id);
+  if (!g) return;
+  const circle = g.querySelector('circle');
+  const text = g.querySelector('text');
+  if (state === 'active') {
+    circle.setAttribute('fill','#fef3c7'); circle.setAttribute('stroke','#f59e0b');
+    text.setAttribute('fill','#92400e');
+  } else if (state === 'visited') {
+    circle.setAttribute('fill','#dcfce7'); circle.setAttribute('stroke','#16a34a');
+    text.setAttribute('fill','#14532d');
+  } else {
+    circle.setAttribute('fill','#e0f2fe'); circle.setAttribute('stroke','#0ea5e9');
+    text.setAttribute('fill','#0369a1');
+  }
+}
+
+function render(idx) {
+  const s = steps[idx];
+
+  // nodes
+  Object.values(NODES).forEach(n => {
+    let state = 'normal';
+    if (s.visited && s.visited.has(n.val)) state = 'visited';
+    if (s.active === n.val) state = 'active';
+    setNodeStyle(n.id, state);
+  });
+
+  // queue
+  const qs = document.getElementById('queueStrip');
+  qs.innerHTML = s.queue.map((v, i) =>
+    `<div class="queue-box${i===0?' front':''}">${v}</div>`).join('') || '<span style="color:#aaa;font-size:13px">vazia</span>';
+
+  // result
+  const rl = document.getElementById('resultLevels');
+  rl.innerHTML = s.result.map((lvl, li) =>
+    `<div class="result-level"><span class="level-tag">Nível ${li}:</span>${lvl.map(v=>`<div class="result-box">${v}</div>`).join('')}</div>`
+  ).join('');
+
+  // step info
+  document.getElementById('stepInfo').innerHTML = s.info;
+
+  // progress
+  const pct = Math.round(idx / (steps.length - 1) * 100);
+  const pf = document.getElementById('progressFill');
+  pf.style.width = pct + '%';
+  pf.textContent = pct + '%';
+
+  document.getElementById('stepBtn').disabled = idx >= steps.length - 1;
+  document.getElementById('playBtn').disabled = idx >= steps.length - 1;
+}
+
+function stepFwd() {
+  if (current < steps.length - 1) { current++; render(current); }
+}
+
+function play() {
+  if (timer) return;
+  document.getElementById('playBtn').disabled = true;
+  const speed = parseInt(document.getElementById('speedRange').value);
+  timer = setInterval(() => {
+    if (current < steps.length - 1) { current++; render(current); }
+    else { clearInterval(timer); timer = null; }
+  }, speed);
+}
+
+function reset() {
+  clearInterval(timer); timer = null;
+  current = 0; render(0);
+  document.getElementById('playBtn').disabled = false;
+}
+
+document.getElementById('speedRange').addEventListener('input', function() {
+  document.getElementById('speedLabel').textContent = this.value + 'ms';
+  if (timer) { clearInterval(timer); timer = null; play(); }
+});
+
+render(0);
+</script>
+</body>
+</html>
