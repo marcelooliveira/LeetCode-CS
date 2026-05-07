@@ -1,38 +1,41 @@
-﻿//-----------------------------------------------------------------------------
-// Runtime: 100ms
-// Memory Usage: 25.2 MB
-// Link: https://leetcode.com/submissions/detail/372037277/
-//-----------------------------------------------------------------------------
+﻿////-----------------------------------------------------------------------------
+//// Runtime: 100ms
+//// Memory Usage: 25.2 MB
+//// Link: https://leetcode.com/submissions/detail/372037277/
+////-----------------------------------------------------------------------------
 
-using System;
+//using System;
 
-namespace LeetCode
-{
-    public class _0209_MinimumSizeSubarraySum
-    {
-		/*
-         Janela dinâmica que encolhe assim que atinge a soma alvo.
+//namespace LeetCode
+//{
+//    public class _0209_MinimumSizeSubarraySum
+//    {
+//		/*
+//Given an array of positive integers nums and a positive integer target, return the minimal 
+//    length (minLength) of a subarray (left..i) whose sum (sum) is greater than or equal to target.
+//    If there is no such subarray, return 0 instead.
+//Example 1:
+//    Input: target = 7, nums = [2,3,1,2,4,3]
+//    Output: 2
+//Explanation: The subarray [4,3] has the minimal length under the problem constraint.
+//         */
 
-            1. Expanda a janela somando elementos com o ponteiro right.
-            2. Enquanto a soma for ≥ alvo, registre o menor 
-                    comprimento e encolha a janela movendo left para a direita.
-         */
-		public int MinSubArrayLen(int s, int[] nums)
-        {
-            var result = int.MaxValue;
-            var sum = 0;
-            var left = 0;
-            for (int i = 0; i < nums.Length; i++)
-            {
-                sum += nums[i];
-                while (sum >= s)
-                {
-                    result = Math.Min(result, i - left + 1);
-                    sum -= nums[left++];
-                }
-            }
+//		public int MinSubArrayLen(int target, int[] nums)
+//        {
+//            var minLength = int.MaxValue;
+//            var sum = 0;
+//            var left = 0;
+//            for (int i = 0; i < nums.Length; i++)
+//            {
+//                sum += nums[i];
+//                while (sum >= target)
+//                {
+//                    minLength = Math.Min(minLength, i - left + 1);
+//                    sum -= nums[left++];
+//                }
+//            }
 
-            return result == int.MaxValue ? 0 : result;
-        }
-    }
-}
+//            return minLength == int.MaxValue ? 0 : minLength;
+//        }
+//    }
+//}
