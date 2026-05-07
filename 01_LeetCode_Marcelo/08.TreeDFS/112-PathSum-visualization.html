@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizacao: 112 - Path Sum</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
+      padding: 20px; min-height: 100vh;
+    }
+    .container {
+      max-width: 1050px; margin: 0 auto; background: white;
+      border-radius: 20px; padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 { color: #0ea5e9; text-align: center; margin-bottom: 8px; font-size: 2em; }
+    .subtitle { text-align: center; color: #666; margin-bottom: 24px; font-size: 1.05em; }
+    .explanation {
+      background: #f0f9ff; padding: 18px 22px; border-radius: 10px;
+      margin-bottom: 26px; border-left: 5px solid #0ea5e9;
+    }
+    .explanation h2 { color: #0ea5e9; margin-bottom: 10px; }
+    .explanation p { line-height: 1.8; color: #333; margin-bottom: 8px; }
+    .explanation code {
+      background: #e0f2fe; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; color: #0369a1;
+    }
+    .controls {
+      display: flex; gap: 12px; margin-bottom: 26px;
+      flex-wrap: wrap; justify-content: center; align-items: center;
+    }
+    button {
+      background: #0ea5e9; color: white; border: none;
+      padding: 11px 22px; border-radius: 8px; cursor: pointer;
+      font-size: 15px; font-weight: 600; transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(14,165,233,0.4);
+    }
+    button:hover { background: #0284c7; transform: translateY(-2px); }
+    button:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+    #stepBtn { background: #8b5cf6; box-shadow: 0 4px 15px rgba(139,92,246,0.4); }
+    #stepBtn:hover { background: #7c3aed; }
+    #stepBtn:disabled { background: #ccc; box-shadow: none; }
+    .speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+    input[type="range"] { width: 120px; }
+    .progress-bar {
+      width: 100%; height: 22px; background: #e9ecef;
+      border-radius: 11px; overflow: hidden; margin-bottom: 20px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0ea5e9 0%, #8b5cf6 100%);
+      transition: width 0.3s; display: flex; align-items: center;
+      justify-content: center; color: white; font-weight: bold; font-size: 12px;
+    }
+    .step-info {
+      background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px;
+      padding: 14px 18px; margin-bottom: 24px; text-align: center;
+      font-size: 15px; color: #374151; min-height: 52px;
+    }
+    .step-info strong { color: #0ea5e9; }
+    .step-info code {
+      background: #e0f2fe; padding: 1px 5px; border-radius: 3px;
+      font-family: monospace; color: #0369a1;
+    }
+    .visualization {
+      background: #fafafa; padding: 20px; border-radius: 10px;
+      margin-bottom: 24px; border: 2px solid #e0f2fe;
+    }
+    .visualization h3 { text-align: center; color: #0ea5e9; margin-bottom: 14px; }
+    .legend {
+      display: flex; gap: 14px; flex-wrap: wrap;
+      justify-content: center; margin-bottom: 14px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+    .legend-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; }
+    #treeSvg { display: block; margin: 0 auto 18px; }
+
+    /* panels */
+    .panels { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+    .panel {
+      background: white; border-radius: 10px; padding: 14px 20px;
+      border: 2px solid #e2e8f0; min-width: 170px; flex: 1; max-width: 300px;
+    }
+    .panel-label {
+      font-weight: 700; font-size: 12px; color: #6b7280;
+      margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .sum-display { text-align: center; }
+    .sum-eq { font-size: 12px; color: #6b7280; }
+    .sum-value {
+      font-size: 52px; font-weight: 900; color: #0ea5e9;
+      transition: color 0.4s, transform 0.3s; display: inline-block;
+    }
+    .sum-value.reduce { color: #f59e0b; transform: scale(1.2); }
+    .sum-value.zero  { color: #16a34a; }
+    .sum-value.neg   { color: #ef4444; }
+
+    .result-badge {
+      text-align: center; padding: 14px 20px; font-size: 18px; font-weight: 900;
+      border-radius: 10px; border: 3px solid; transition: all 0.4s;
+    }
+    .result-badge.pending { background: #f1f5f9; border-color: #cbd5e1; color: #94a3b8; }
+    .result-badge.true-badge { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+    .result-badge.false-badge { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+
+    /* sum formula chain */
+    .chain-area { margin-top: 14px; }
+    .chain-label { font-weight: 700; color: #8b5cf6; font-size: 13px; margin-bottom: 8px; text-align: center; }
+    .chain-formula {
+      display: flex; gap: 4px; align-items: center; justify-content: center;
+      flex-wrap: wrap; min-height: 44px; padding: 8px;
+      background: white; border-radius: 8px; border: 2px solid #ede9fe;
+    }
+    .chain-target {
+      padding: 6px 12px; border-radius: 6px; font-weight: 900; font-size: 16px;
+      background: #dbeafe; color: #1d4ed8; border: 2px solid #3b82f6;
+    }
+    .chain-step {
+      display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700;
+    }
+    .chain-minus { color: #6b7280; font-size: 16px; }
+    .chain-node-val {
+      padding: 5px 10px; border-radius: 5px; border: 2px solid;
+      font-weight: 700; font-size: 14px; transition: all 0.3s;
+    }
+    .chain-node-val.normal-step { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+    .chain-node-val.fail-step   { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+    .chain-node-val.ok-step     { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+    .chain-arrow { color: #6b7280; }
+    .chain-rem {
+      padding: 5px 10px; border-radius: 5px; font-weight: 700; font-size: 14px;
+      background: #f8fafc; border: 2px solid #e2e8f0; color: #374151;
+    }
+    .chain-rem.zero-rem { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+    .chain-rem.neg-rem  { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+
+    /* path breadcrumb */
+    .path-area { margin-top: 14px; }
+    .path-label { font-weight: 700; color: #0ea5e9; font-size: 13px; margin-bottom: 8px; text-align: center; }
+    .path-row { display: flex; gap: 5px; justify-content: center; align-items: center; flex-wrap: wrap; min-height: 36px; }
+    .path-node {
+      padding: 5px 12px; border-radius: 6px; font-weight: 700; font-size: 14px;
+      border: 2px solid; transition: all 0.3s;
+    }
+    .path-node.on-path     { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+    .path-node.on-success  { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+    .path-arrow { color: #6b7280; font-size: 16px; }
+
+    .code-section {
+      background: #1e1e1e; border-radius: 10px; padding: 20px;
+      overflow-x: auto; margin-bottom: 6px;
+    }
+    .code-section pre {
+      color: #d4d4d4; font-family: 'Courier New', monospace;
+      font-size: 13.5px; line-height: 1.7;
+    }
+    .code-kw { color: #569cd6; }
+    .code-type { color: #4ec9b0; }
+    .code-com { color: #6a9955; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>112 - Path Sum</h1>
+  <p class="subtitle">DFS recursivo subtraindo valores — padrão Tree DFS</p>
+
+  <div class="explanation">
+    <h2>Como funciona?</h2>
+    <p>Input de teste: árvore <code>[5,4,8,11,null,13,4,7,2,null,null,null,1]</code>, target = <strong>22</strong></p>
+    <p>O algoritmo percorre a árvore com DFS, <strong>subtraindo o valor de cada nó da soma restante</strong>. Ao chegar em uma folha, verifica se a soma restante é 0 (soma exata encontrada). Se sim, retorna <code>true</code>; caso contrário, faz <em>backtrack</em>.</p>
+    <p>Caminho encontrado: <strong>5 → 4 → 11 → 2</strong> = 5+4+11+2 = 22 ✅</p>
+    <p><strong>Complexidade:</strong> Tempo O(n) · Espaço O(h) onde h é a altura da árvore</p>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn" onclick="play()">▶ Play</button>
+    <button id="stepBtn" onclick="stepFwd()">⏭ Step</button>
+    <button onclick="reset()">↺ Reset</button>
+    <div class="speed-control">
+      <span>Velocidade:</span>
+      <input type="range" id="speedRange" min="300" max="2500" value="1100" step="100">
+      <span id="speedLabel">1100ms</span>
+    </div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%">0%</div></div>
+  <div class="step-info" id="stepInfo">Pressione <strong>Play</strong> ou <strong>Step</strong> para começar.</div>
+
+  <div class="visualization">
+    <h3>Árvore Binária — Input: [5,4,8,11,null,13,4,7,2,null,null,null,1], target=22</h3>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#e0f2fe;border-color:#0ea5e9;"></div> Normal</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fef3c7;border-color:#f59e0b;"></div> No caminho atual</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#ef4444;"></div> Falhou (backtrack)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#dcfce7;border-color:#16a34a;"></div> Caminho encontrado!</div>
+    </div>
+
+    <!--
+      Tree layout (BFS order: [5, 4, 8, 11, null, 13, 4r, 7, 2, null, null, null, 1r]):
+        Level 0 y=38:  nd5  at (280,38)
+        Level 1 y=112: nd4  at (148,112)   nd8  at (412,112)
+        Level 2 y=186: nd11 at (82,186)    nd13 at (340,186)  nd4b at (468,186)
+        Level 3 y=260: nd7  at (44,260)    nd2  at (124,260)  nd1b at (498,260)
+    -->
+    <svg id="treeSvg" width="560" height="290" viewBox="0 0 560 290">
+      <!-- edges -->
+      <line id="e5_4"   stroke="#cbd5e1" stroke-width="2.2" x1="280" y1="38"  x2="148" y2="112"/>
+      <line id="e5_8"   stroke="#cbd5e1" stroke-width="2.2" x1="280" y1="38"  x2="412" y2="112"/>
+      <line id="e4_11"  stroke="#cbd5e1" stroke-width="2.2" x1="148" y1="112" x2="82"  y2="186"/>
+      <line id="e8_13"  stroke="#cbd5e1" stroke-width="2.2" x1="412" y1="112" x2="340" y2="186"/>
+      <line id="e8_4b"  stroke="#cbd5e1" stroke-width="2.2" x1="412" y1="112" x2="468" y2="186"/>
+      <line id="e11_7"  stroke="#cbd5e1" stroke-width="2.2" x1="82"  y1="186" x2="44"  y2="260"/>
+      <line id="e11_2"  stroke="#cbd5e1" stroke-width="2.2" x1="82"  y1="186" x2="124" y2="260"/>
+      <line id="e4b_1b" stroke="#cbd5e1" stroke-width="2.2" x1="468" y1="186" x2="498" y2="260"/>
+      <!-- nodes -->
+      <g id="nd5">
+        <circle cx="280" cy="38"  r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="280" y="38"  font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">5</text>
+      </g>
+      <g id="nd4">
+        <circle cx="148" cy="112" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="148" y="112" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">4</text>
+      </g>
+      <g id="nd8">
+        <circle cx="412" cy="112" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="412" y="112" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">8</text>
+      </g>
+      <g id="nd11">
+        <circle cx="82"  cy="186" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="82"  y="186" font-size="12" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">11</text>
+      </g>
+      <g id="nd13">
+        <circle cx="340" cy="186" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="340" y="186" font-size="12" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">13</text>
+      </g>
+      <g id="nd4b">
+        <circle cx="468" cy="186" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="468" y="186" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">4</text>
+      </g>
+      <g id="nd7">
+        <circle cx="44"  cy="260" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="44"  y="260" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">7</text>
+      </g>
+      <g id="nd2">
+        <circle cx="124" cy="260" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="124" y="260" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">2</text>
+      </g>
+      <g id="nd1b">
+        <circle cx="498" cy="260" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="498" y="260" font-size="14" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">1</text>
+      </g>
+    </svg>
+
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-label">Soma Restante (sum)</div>
+        <div class="sum-display">
+          <div class="sum-eq">target − nós visitados =</div>
+          <span class="sum-value" id="sumValue">22</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Resultado HasPathSum</div>
+        <div class="result-badge pending" id="resultBadge">Aguardando…</div>
+      </div>
+    </div>
+
+    <div class="path-area">
+      <div class="path-label">Caminho Atual (DFS path)</div>
+      <div class="path-row" id="pathRow"><span style="color:#aaa;font-size:13px">—</span></div>
+    </div>
+
+    <div class="chain-area">
+      <div class="chain-label">Fórmula de Subtração</div>
+      <div class="chain-formula" id="chainFormula">
+        <div class="chain-target">22</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-section">
+    <pre><span class="code-kw">public bool</span> HasPathSum(<span class="code-type">TreeNode</span> root, <span class="code-kw">int</span> sum)
+{
+    <span class="code-kw">if</span> (root == <span class="code-kw">null</span>) <span class="code-kw">return false</span>;             <span class="code-com">// nó nulo → false</span>
+
+    sum = sum - root.val;                               <span class="code-com">// ← subtrai valor do nó</span>
+
+    <span class="code-kw">if</span> (root.left == <span class="code-kw">null</span> &amp;&amp; root.right == <span class="code-kw">null</span>)
+        <span class="code-kw">return</span> sum == 0;                            <span class="code-com">// ← folha: soma restante deve ser 0</span>
+
+    <span class="code-kw">return</span> HasPathSum(root.left,  sum)
+        || HasPathSum(root.right, sum);                 <span class="code-com">// ← tenta esquerda ou direita</span>
+}</pre>
+  </div>
+</div>
+
+<script>
+// chain: [{val, rem, type}]  type: 'active'|'fail'|'ok'
+const steps = [
+  {
+    activePath: [], failed: [], success: [],
+    chain: [], rem: 22, result: null, finalSuccess: false,
+    info: 'Input: <code>[5,4,8,11,null,13,4,7,2,null,null,null,1]</code>, target=<strong>22</strong>. Chamando <strong>HasPathSum(raiz=5, sum=22)</strong>.'
+  },
+  {
+    activePath: ['nd5'], failed: [], success: [],
+    chain: [{ val: 5, rem: 17, type: 'active' }], rem: 17, result: null, finalSuccess: false,
+    info: '<strong>HasPathSum(5, 22)</strong>: sum = 22 − 5 = <strong>17</strong>. Nó 5 não é folha. Tenta filho esquerdo (4).'
+  },
+  {
+    activePath: ['nd5','nd4'], failed: [], success: [],
+    chain: [
+      { val: 5, rem: 17, type: 'active' },
+      { val: 4, rem: 13, type: 'active' }
+    ], rem: 13, result: null, finalSuccess: false,
+    info: '<strong>HasPathSum(4, 17)</strong>: sum = 17 − 4 = <strong>13</strong>. Nó 4 não é folha. Tenta filho esquerdo (11).'
+  },
+  {
+    activePath: ['nd5','nd4','nd11'], failed: [], success: [],
+    chain: [
+      { val: 5, rem: 17, type: 'active' },
+      { val: 4, rem: 13, type: 'active' },
+      { val: 11, rem: 2, type: 'active' }
+    ], rem: 2, result: null, finalSuccess: false,
+    info: '<strong>HasPathSum(11, 13)</strong>: sum = 13 − 11 = <strong>2</strong>. Nó 11 não é folha. Tenta filho esquerdo (7).'
+  },
+  {
+    activePath: ['nd5','nd4','nd11','nd7'], failed: ['nd7'], success: [],
+    chain: [
+      { val: 5, rem: 17, type: 'active' },
+      { val: 4, rem: 13, type: 'active' },
+      { val: 11, rem: 2,  type: 'active' },
+      { val: 7, rem: -5, type: 'fail' }
+    ], rem: -5, result: null, finalSuccess: false,
+    info: '<strong>HasPathSum(7, 2)</strong>: sum = 2 − 7 = <strong>−5</strong>. FOLHA! −5 ≠ 0 → <strong>false</strong> ✗. Backtrack ↩'
+  },
+  {
+    activePath: ['nd5','nd4','nd11'], failed: ['nd7'], success: [],
+    chain: [
+      { val: 5, rem: 17, type: 'active' },
+      { val: 4, rem: 13, type: 'active' },
+      { val: 11, rem: 2, type: 'active' }
+    ], rem: 2, result: null, finalSuccess: false,
+    info: 'Backtrack ao nó <strong>11</strong>. HasPathSum(esq=7) retornou false. Tenta filho direito (2).'
+  },
+  {
+    activePath: ['nd5','nd4','nd11','nd2'], failed: ['nd7'], success: ['nd2'],
+    chain: [
+      { val: 5, rem: 17, type: 'active' },
+      { val: 4, rem: 13, type: 'active' },
+      { val: 11, rem: 2,  type: 'active' },
+      { val: 2, rem: 0,  type: 'ok' }
+    ], rem: 0, result: true, finalSuccess: false,
+    info: '<strong>HasPathSum(2, 2)</strong>: sum = 2 − 2 = <strong>0</strong>. FOLHA! 0 == 0 → <strong>true</strong> ✅!'
+  },
+  {
+    activePath: [], failed: ['nd7'], success: ['nd5','nd4','nd11','nd2'],
+    chain: [
+      { val: 5, rem: 17, type: 'ok' },
+      { val: 4, rem: 13, type: 'ok' },
+      { val: 11, rem: 2,  type: 'ok' },
+      { val: 2, rem: 0,  type: 'ok' }
+    ], rem: 0, result: true, finalSuccess: true,
+    info: '✅ <strong>HasPathSum = true</strong>. Caminho <strong>5→4→11→2</strong> = 5+4+11+2 = 22. Propagando <code>true</code> até a raiz.'
+  },
+];
+
+// edges on the success path
+const SUCCESS_EDGES = ['e5_4','e4_11','e11_2'];
+// edges on the fail path
+const FAIL_PATH_EDGES = { nd7: 'e11_7' };
+// edge connecting two consecutive path nodes
+const PATH_EDGE = {
+  'nd5-nd4':   'e5_4',
+  'nd4-nd11':  'e4_11',
+  'nd11-nd7':  'e11_7',
+  'nd11-nd2':  'e11_2',
+};
+const ALL_EDGES = ['e5_4','e5_8','e4_11','e8_13','e8_4b','e11_7','e11_2','e4b_1b'];
+const ALL_NODES = ['nd5','nd4','nd8','nd11','nd13','nd4b','nd7','nd2','nd1b'];
+
+let current = 0, timer = null, prevRem = 22;
+
+function setNode(id, state) {
+  const g = document.getElementById(id);
+  if (!g) return;
+  const c = g.querySelector('circle'), t = g.querySelector('text');
+  const styles = {
+    active:  { fill: '#fef3c7', stroke: '#f59e0b', text: '#92400e' },
+    fail:    { fill: '#fee2e2', stroke: '#ef4444', text: '#991b1b' },
+    success: { fill: '#dcfce7', stroke: '#16a34a', text: '#14532d' },
+    normal:  { fill: '#e0f2fe', stroke: '#0ea5e9', text: '#0369a1' },
+  };
+  const st = styles[state] || styles.normal;
+  c.setAttribute('fill', st.fill); c.setAttribute('stroke', st.stroke);
+  t.setAttribute('fill', st.text);
+}
+
+function getEdgeKey(path, i) {
+  if (i < 1 || i >= path.length) return null;
+  return path[i-1] + '-' + path[i];
+}
+
+function render(idx) {
+  const s = steps[idx];
+
+  // node states
+  ALL_NODES.forEach(id => {
+    let state = 'normal';
+    if (s.failed.includes(id)) state = 'fail';
+    if (s.activePath.includes(id)) state = 'active';
+    if (s.success.includes(id)) state = 'success';
+    setNode(id, state);
+  });
+
+  // edges
+  ALL_EDGES.forEach(e => {
+    const el = document.getElementById(e);
+    if (!el) return;
+    el.setAttribute('stroke', '#cbd5e1'); el.setAttribute('stroke-width', '2.2');
+  });
+  // highlight active path edges
+  for (let i = 1; i < s.activePath.length; i++) {
+    const key = s.activePath[i-1] + '-' + s.activePath[i];
+    const edgeId = PATH_EDGE[key];
+    if (edgeId) {
+      const el = document.getElementById(edgeId);
+      if (el) {
+        el.setAttribute('stroke', s.finalSuccess ? '#16a34a' : '#f59e0b');
+        el.setAttribute('stroke-width', '4');
+      }
+    }
+  }
+  // highlight fail path edges
+  if (s.failed.includes('nd7')) {
+    const el = document.getElementById('e11_7');
+    if (el) { el.setAttribute('stroke', '#ef4444'); el.setAttribute('stroke-width', '3'); }
+  }
+  // highlight success path edges at final step
+  if (s.finalSuccess) {
+    SUCCESS_EDGES.forEach(e => {
+      const el = document.getElementById(e);
+      if (el) { el.setAttribute('stroke', '#16a34a'); el.setAttribute('stroke-width', '4'); }
+    });
+  }
+
+  // sum value
+  const sv = document.getElementById('sumValue');
+  sv.textContent = s.rem;
+  sv.className = 'sum-value';
+  if (s.rem === 0) sv.classList.add('zero');
+  else if (s.rem < 0) sv.classList.add('neg');
+  else if (s.rem !== prevRem) {
+    sv.classList.add('reduce');
+    setTimeout(() => sv.classList.remove('reduce'), 400);
+  }
+  prevRem = s.rem;
+
+  // result badge
+  const rb = document.getElementById('resultBadge');
+  if (s.result === null) {
+    rb.className = 'result-badge pending'; rb.textContent = 'Aguardando…';
+  } else if (s.result === true) {
+    rb.className = 'result-badge true-badge'; rb.textContent = '✅ true';
+  } else {
+    rb.className = 'result-badge false-badge'; rb.textContent = '✗ false';
+  }
+
+  // path breadcrumb
+  const pr = document.getElementById('pathRow');
+  const pathNodes = s.finalSuccess ? s.success : s.activePath;
+  const isSuccess = s.finalSuccess;
+  if (pathNodes.length === 0) {
+    pr.innerHTML = '<span style="color:#aaa;font-size:13px">—</span>';
+  } else {
+    pr.innerHTML = pathNodes.map((id, i) => {
+      const val = { nd5:5, nd4:4, nd8:8, nd11:11, nd13:13, nd4b:4, nd7:7, nd2:2, nd1b:1 }[id];
+      const cls = isSuccess ? 'path-node on-success' :
+                  (s.failed.includes(id) ? 'path-node' : 'path-node on-path');
+      return (i > 0 ? '<span class="path-arrow">→</span>' : '') +
+             `<div class="${cls}">${val}</div>`;
+    }).join('');
+  }
+
+  // chain formula
+  const cf = document.getElementById('chainFormula');
+  let html = '<div class="chain-target">22</div>';
+  s.chain.forEach(entry => {
+    const remCls = entry.rem === 0 ? 'chain-rem zero-rem' :
+                   entry.rem < 0  ? 'chain-rem neg-rem' : 'chain-rem';
+    const valCls = entry.type === 'fail' ? 'chain-node-val fail-step' :
+                   entry.type === 'ok'   ? 'chain-node-val ok-step'   :
+                                           'chain-node-val normal-step';
+    html += `
+      <span class="chain-minus">−</span>
+      <div class="chain-step">
+        <span class="${valCls}">${entry.val}</span>
+        <span class="chain-arrow">=</span>
+        <span class="${remCls}">${entry.rem}</span>
+      </div>`;
+  });
+  if (s.result === true) html += ' <span style="font-size:18px">✅</span>';
+  if (s.chain.length > 0 && s.chain[s.chain.length-1].type === 'fail')
+    html += ' <span style="font-size:16px;color:#ef4444">✗</span>';
+  cf.innerHTML = html;
+
+  // step info
+  document.getElementById('stepInfo').innerHTML = s.info;
+  const pct = Math.round(idx / (steps.length - 1) * 100);
+  const pf = document.getElementById('progressFill');
+  pf.style.width = pct + '%'; pf.textContent = pct + '%';
+  document.getElementById('stepBtn').disabled = idx >= steps.length - 1;
+  document.getElementById('playBtn').disabled = idx >= steps.length - 1;
+}
+
+function stepFwd() { if (current < steps.length - 1) { current++; render(current); } }
+
+function play() {
+  if (timer) return;
+  document.getElementById('playBtn').disabled = true;
+  const speed = parseInt(document.getElementById('speedRange').value);
+  timer = setInterval(() => {
+    if (current < steps.length - 1) { current++; render(current); }
+    else { clearInterval(timer); timer = null; }
+  }, speed);
+}
+
+function reset() {
+  clearInterval(timer); timer = null; prevRem = 22;
+  current = 0; render(0);
+  document.getElementById('playBtn').disabled = false;
+}
+
+document.getElementById('speedRange').addEventListener('input', function () {
+  document.getElementById('speedLabel').textContent = this.value + 'ms';
+  if (timer) { clearInterval(timer); timer = null; play(); }
+});
+
+render(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizacao: 0543 - Diameter of Binary Tree</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
+      padding: 20px; min-height: 100vh;
+    }
+    .container {
+      max-width: 1050px; margin: 0 auto; background: white;
+      border-radius: 20px; padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 { color: #0ea5e9; text-align: center; margin-bottom: 8px; font-size: 2em; }
+    .subtitle { text-align: center; color: #666; margin-bottom: 24px; font-size: 1.05em; }
+    .explanation {
+      background: #f0f9ff; padding: 18px 22px; border-radius: 10px;
+      margin-bottom: 26px; border-left: 5px solid #0ea5e9;
+    }
+    .explanation h2 { color: #0ea5e9; margin-bottom: 10px; }
+    .explanation p { line-height: 1.8; color: #333; margin-bottom: 8px; }
+    .explanation code {
+      background: #e0f2fe; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; color: #0369a1;
+    }
+    .controls {
+      display: flex; gap: 12px; margin-bottom: 26px;
+      flex-wrap: wrap; justify-content: center; align-items: center;
+    }
+    button {
+      background: #0ea5e9; color: white; border: none;
+      padding: 11px 22px; border-radius: 8px; cursor: pointer;
+      font-size: 15px; font-weight: 600; transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(14,165,233,0.4);
+    }
+    button:hover { background: #0284c7; transform: translateY(-2px); }
+    button:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+    #stepBtn { background: #8b5cf6; box-shadow: 0 4px 15px rgba(139,92,246,0.4); }
+    #stepBtn:hover { background: #7c3aed; }
+    #stepBtn:disabled { background: #ccc; box-shadow: none; }
+    .speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+    input[type="range"] { width: 120px; }
+    .progress-bar {
+      width: 100%; height: 22px; background: #e9ecef;
+      border-radius: 11px; overflow: hidden; margin-bottom: 20px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0ea5e9 0%, #8b5cf6 100%);
+      transition: width 0.3s; display: flex; align-items: center;
+      justify-content: center; color: white; font-weight: bold; font-size: 12px;
+    }
+    .step-info {
+      background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px;
+      padding: 14px 18px; margin-bottom: 24px; text-align: center;
+      font-size: 15px; color: #374151; min-height: 52px;
+    }
+    .step-info strong { color: #0ea5e9; }
+    .step-info code {
+      background: #e0f2fe; padding: 1px 5px; border-radius: 3px;
+      font-family: monospace; color: #0369a1;
+    }
+    .visualization {
+      background: #fafafa; padding: 20px; border-radius: 10px;
+      margin-bottom: 24px; border: 2px solid #e0f2fe;
+    }
+    .visualization h3 { text-align: center; color: #0ea5e9; margin-bottom: 14px; }
+    .legend {
+      display: flex; gap: 14px; flex-wrap: wrap;
+      justify-content: center; margin-bottom: 14px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+    .legend-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; }
+    #treeSvg { display: block; margin: 0 auto 20px; }
+
+    /* info panels */
+    .panels { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+    .panel {
+      background: white; border-radius: 10px; padding: 14px 20px;
+      border: 2px solid #e2e8f0; min-width: 170px; flex: 1; max-width: 260px;
+    }
+    .panel-label {
+      font-weight: 700; font-size: 12px; color: #6b7280;
+      margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .answer-display {
+      text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .answer-eq { font-size: 12px; color: #6b7280; }
+    .answer-value {
+      font-size: 52px; font-weight: 900; color: #0ea5e9;
+      transition: color 0.4s, transform 0.3s; display: inline-block;
+    }
+    .answer-value.pop { color: #f59e0b; transform: scale(1.25); }
+    .frame-table { width: 100%; font-size: 14px; border-collapse: collapse; }
+    .frame-table td { padding: 5px 4px; vertical-align: middle; }
+    .frame-table td:first-child { color: #6b7280; font-size: 12px; white-space: nowrap; }
+    .frame-table td:last-child { font-weight: 700; color: #374151; }
+
+    /* call stack */
+    .stack-area { margin-top: 14px; }
+    .stack-label { font-weight: 700; color: #8b5cf6; font-size: 13px; margin-bottom: 8px; text-align: center; }
+    .stack-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; min-height: 38px; }
+    .stack-chip {
+      padding: 5px 12px; border-radius: 6px; font-size: 14px; font-weight: 700;
+      border: 2px solid; transition: all 0.3s;
+    }
+    .stack-chip.active-chip { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+    .stack-chip.waiting-chip { background: #ede9fe; border-color: #8b5cf6; color: #5b21b6; }
+    .stack-chip.done-chip { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+
+    /* depths row */
+    .depths-area { margin-top: 14px; }
+    .depths-label { font-weight: 700; color: #16a34a; font-size: 13px; margin-bottom: 8px; text-align: center; }
+    .depths-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .depth-chip {
+      padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 700;
+      border: 2px solid #16a34a; background: #dcfce7; color: #14532d;
+      transition: all 0.3s; opacity: 0.25;
+    }
+    .depth-chip.visible { opacity: 1; }
+
+    .code-section {
+      background: #1e1e1e; border-radius: 10px; padding: 20px;
+      overflow-x: auto; margin-bottom: 6px;
+    }
+    .code-section pre {
+      color: #d4d4d4; font-family: 'Courier New', monospace;
+      font-size: 13.5px; line-height: 1.7;
+    }
+    .code-kw { color: #569cd6; }
+    .code-type { color: #4ec9b0; }
+    .code-com { color: #6a9955; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>0543 - Diameter of Binary Tree</h1>
+  <p class="subtitle">DFS pós-ordem com variável global <code>answer</code> — padrão Tree DFS</p>
+
+  <div class="explanation">
+    <h2>Como funciona?</h2>
+    <p>Input de teste: <code>[1, 2, 3, 4, 5]</code> → resultado esperado: <code>3</code></p>
+    <p>O algoritmo usa DFS <strong>pós-ordem</strong>: processa os filhos <em>antes</em> do pai. A função <code>GetEdgeDepth(node)</code> retorna a profundidade em arestas do nó. Para cada nó, o diâmetro que passa por ele é <code>left + right</code>. A variável global <code>answer</code> guarda o máximo encontrado.</p>
+    <p>No nó 2: left=1 (de 4), right=1 (de 5) → <code>answer = max(0, 1+1) = 2</code>. No nó 1: left=2 (de 2), right=1 (de 3) → <code>answer = max(2, 2+1) = 3</code>.</p>
+    <p><strong>Complexidade:</strong> Tempo O(n) · Espaço O(h) onde h é a altura da árvore</p>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn" onclick="play()">▶ Play</button>
+    <button id="stepBtn" onclick="stepFwd()">⏭ Step</button>
+    <button onclick="reset()">↺ Reset</button>
+    <div class="speed-control">
+      <span>Velocidade:</span>
+      <input type="range" id="speedRange" min="300" max="2500" value="1100" step="100">
+      <span id="speedLabel">1100ms</span>
+    </div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%">0%</div></div>
+  <div class="step-info" id="stepInfo">Pressione <strong>Play</strong> ou <strong>Step</strong> para começar.</div>
+
+  <div class="visualization">
+    <h3>Árvore Binária — Input: [1, 2, 3, 4, 5]</h3>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#e0f2fe;border-color:#0ea5e9;"></div> Normal</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fef3c7;border-color:#f59e0b;"></div> Ativo (topo da pilha)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ede9fe;border-color:#8b5cf6;"></div> Na pilha (ancestor)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#dcfce7;border-color:#16a34a;"></div> Concluído (retornou)</div>
+    </div>
+
+    <svg id="treeSvg" width="420" height="242" viewBox="0 0 420 242">
+      <!-- edges -->
+      <line id="e12" stroke="#cbd5e1" stroke-width="2.2" x1="210" y1="40" x2="120" y2="120"/>
+      <line id="e13" stroke="#cbd5e1" stroke-width="2.2" x1="210" y1="40" x2="300" y2="120"/>
+      <line id="e24" stroke="#cbd5e1" stroke-width="2.2" x1="120" y1="120" x2="70"  y2="200"/>
+      <line id="e25" stroke="#cbd5e1" stroke-width="2.2" x1="120" y1="120" x2="170" y2="200"/>
+      <!-- nodes -->
+      <g id="n1">
+        <circle cx="210" cy="40"  r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="210" y="40"  font-size="15" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">1</text>
+      </g>
+      <g id="n2">
+        <circle cx="120" cy="120" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="120" y="120" font-size="15" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">2</text>
+      </g>
+      <g id="n3">
+        <circle cx="300" cy="120" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="300" y="120" font-size="15" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">3</text>
+      </g>
+      <g id="n4">
+        <circle cx="70"  cy="200" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="70"  y="200" font-size="15" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">4</text>
+      </g>
+      <g id="n5">
+        <circle cx="170" cy="200" r="22" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2.5"/>
+        <text x="170" y="200" font-size="15" font-weight="700" dominant-baseline="central" text-anchor="middle" fill="#0369a1">5</text>
+      </g>
+      <!-- depth labels (hidden until computed) -->
+      <text id="dl1" x="242" y="33"  font-size="11" font-weight="700" fill="#16a34a" opacity="0">d=3</text>
+      <text id="dl2" x="152" y="112" font-size="11" font-weight="700" fill="#16a34a" opacity="0">d=2</text>
+      <text id="dl3" x="332" y="112" font-size="11" font-weight="700" fill="#16a34a" opacity="0">d=1</text>
+      <text id="dl4" x="97"  y="192" font-size="11" font-weight="700" fill="#16a34a" opacity="0">d=1</text>
+      <text id="dl5" x="197" y="192" font-size="11" font-weight="700" fill="#16a34a" opacity="0">d=1</text>
+    </svg>
+
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-label">Variável Global</div>
+        <div class="answer-display">
+          <span class="answer-eq">answer =</span>
+          <span class="answer-value" id="answerValue">0</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Frame Atual: GetEdgeDepth</div>
+        <table class="frame-table">
+          <tr><td>Nó:</td><td id="fNode">—</td></tr>
+          <tr><td>left depth:</td><td id="fLeft">—</td></tr>
+          <tr><td>right depth:</td><td id="fRight">—</td></tr>
+          <tr><td>Retorna:</td><td id="fRet">—</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="stack-area">
+      <div class="stack-label">Pilha de Chamadas (Call Stack)</div>
+      <div class="stack-row" id="stackRow"></div>
+    </div>
+
+    <div class="depths-area">
+      <div class="depths-label">Profundidades Computadas (GetEdgeDepth retornou)</div>
+      <div class="depths-row">
+        <div class="depth-chip" id="dc4">nó 4: d=1</div>
+        <div class="depth-chip" id="dc5">nó 5: d=1</div>
+        <div class="depth-chip" id="dc3">nó 3: d=1</div>
+        <div class="depth-chip" id="dc2">nó 2: d=2</div>
+        <div class="depth-chip" id="dc1">nó 1: d=3</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-section">
+    <pre><span class="code-kw">private int</span> answer;
+
+<span class="code-kw">public int</span> DiameterOfBinaryTree(<span class="code-type">TreeNode</span> root)
+{
+    GetEdgeDepth(root);
+    <span class="code-kw">return</span> answer;
+}
+
+<span class="code-kw">private int</span> GetEdgeDepth(<span class="code-type">TreeNode</span> root)
+{
+    <span class="code-kw">if</span> (root == <span class="code-kw">null</span>) <span class="code-kw">return</span> 0;                           <span class="code-com">// base case</span>
+
+    <span class="code-kw">var</span> left  = GetEdgeDepth(root.left);                   <span class="code-com">// ← pós-ordem: recurse esquerda</span>
+    <span class="code-kw">var</span> right = GetEdgeDepth(root.right);                  <span class="code-com">// ← pós-ordem: recurse direita</span>
+
+    this.answer = Math.Max(this.answer, left + right);     <span class="code-com">// ← atualiza diâmetro global</span>
+    <span class="code-kw">return</span> Math.Max(left, right) + 1;                      <span class="code-com">// ← retorna profundidade do nó</span>
+}</pre>
+  </div>
+</div>
+
+<script>
+const NODES = [1, 2, 3, 4, 5];
+const DEPTH_COMPUTED = { 1: true, 2: true, 3: true, 4: true, 5: true };
+
+const steps = [
+  {
+    active: null, inStack: [], done: [], answer: 0, frame: null,
+    depths: {}, diamEdges: false,
+    info: 'Início: <strong>DiameterOfBinaryTree(root=1)</strong>. answer=0. Chama <strong>GetEdgeDepth(1)</strong>.'
+  },
+  {
+    active: 1, inStack: [], done: [], answer: 0,
+    frame: { node: 1, left: '?', right: '?', ret: '?' },
+    depths: {}, diamEdges: false,
+    info: '<strong>GetEdgeDepth(1)</strong>: raiz não é null. Recursão → <strong>GetEdgeDepth(esq = nó 2)</strong>.'
+  },
+  {
+    active: 2, inStack: [1], done: [], answer: 0,
+    frame: { node: 2, left: '?', right: '?', ret: '?' },
+    depths: {}, diamEdges: false,
+    info: '<strong>GetEdgeDepth(2)</strong>: não é null. Recursão → <strong>GetEdgeDepth(esq = nó 4)</strong>.'
+  },
+  {
+    active: 4, inStack: [1, 2], done: [], answer: 0,
+    frame: { node: 4, left: 0, right: 0, ret: 1 },
+    depths: {}, diamEdges: false,
+    info: '<strong>GetEdgeDepth(4)</strong>: folha. left=0, right=0. answer=max(0, 0+0)=<strong>0</strong>. Retorna max(0,0)+1=<strong>1</strong>.'
+  },
+  {
+    active: 2, inStack: [1], done: [4], answer: 0,
+    frame: { node: 2, left: 1, right: '?', ret: '?' },
+    depths: { 4: 1 }, diamEdges: false,
+    info: 'De volta a <strong>GetEdgeDepth(2)</strong>: left=<strong>1</strong> (retorno do nó 4). Recursão → <strong>GetEdgeDepth(dir = nó 5)</strong>.'
+  },
+  {
+    active: 5, inStack: [1, 2], done: [4], answer: 0,
+    frame: { node: 5, left: 0, right: 0, ret: 1 },
+    depths: { 4: 1 }, diamEdges: false,
+    info: '<strong>GetEdgeDepth(5)</strong>: folha. left=0, right=0. answer=max(0, 0+0)=<strong>0</strong>. Retorna <strong>1</strong>.'
+  },
+  {
+    active: 2, inStack: [1], done: [4, 5], answer: 2,
+    frame: { node: 2, left: 1, right: 1, ret: 2 },
+    depths: { 4: 1, 5: 1 }, diamEdges: false,
+    info: '<strong>GetEdgeDepth(2)</strong>: left=1, right=1. answer=max(0, <strong>1+1=2</strong>) → answer=<strong>2</strong> ✨! Retorna max(1,1)+1=<strong>2</strong>.'
+  },
+  {
+    active: 1, inStack: [], done: [4, 5, 2], answer: 2,
+    frame: { node: 1, left: 2, right: '?', ret: '?' },
+    depths: { 4: 1, 5: 1, 2: 2 }, diamEdges: false,
+    info: 'De volta a <strong>GetEdgeDepth(1)</strong>: left=<strong>2</strong> (retorno do nó 2). Recursão → <strong>GetEdgeDepth(dir = nó 3)</strong>.'
+  },
+  {
+    active: 3, inStack: [1], done: [4, 5, 2], answer: 2,
+    frame: { node: 3, left: 0, right: 0, ret: 1 },
+    depths: { 4: 1, 5: 1, 2: 2 }, diamEdges: false,
+    info: '<strong>GetEdgeDepth(3)</strong>: folha. left=0, right=0. answer=max(2, 0+0)=<strong>2</strong> (sem alteração). Retorna <strong>1</strong>.'
+  },
+  {
+    active: 1, inStack: [], done: [4, 5, 2, 3], answer: 3,
+    frame: { node: 1, left: 2, right: 1, ret: 3 },
+    depths: { 4: 1, 5: 1, 2: 2, 3: 1 }, diamEdges: false,
+    info: '<strong>GetEdgeDepth(1)</strong>: left=2, right=1. answer=max(2, <strong>2+1=3</strong>) → answer=<strong>3</strong> ✨! Retorna max(2,1)+1=<strong>3</strong>.'
+  },
+  {
+    active: null, inStack: [], done: [4, 5, 2, 3, 1], answer: 3,
+    frame: null,
+    depths: { 1: 3, 4: 1, 5: 1, 2: 2, 3: 1 }, diamEdges: true,
+    info: '✅ <strong>Diâmetro = 3</strong>. Caminho: <strong>4→2→1→3</strong> (ou 5→2→1→3) passa por 3 arestas.'
+  },
+];
+
+const DIAM_EDGES = ['e12', 'e13', 'e24'];
+let current = 0, timer = null, prevAnswer = -1;
+
+function setNode(id, state) {
+  const g = document.getElementById('n' + id);
+  if (!g) return;
+  const c = g.querySelector('circle'), t = g.querySelector('text');
+  const styles = {
+    active:  { fill: '#fef3c7', stroke: '#f59e0b', text: '#92400e' },
+    stack:   { fill: '#ede9fe', stroke: '#8b5cf6', text: '#5b21b6' },
+    done:    { fill: '#dcfce7', stroke: '#16a34a', text: '#14532d' },
+    normal:  { fill: '#e0f2fe', stroke: '#0ea5e9', text: '#0369a1' },
+  };
+  const st = styles[state] || styles.normal;
+  c.setAttribute('fill', st.fill); c.setAttribute('stroke', st.stroke);
+  t.setAttribute('fill', st.text);
+}
+
+function render(idx) {
+  const s = steps[idx];
+
+  // node states
+  NODES.forEach(id => {
+    let state = 'normal';
+    if (s.done.includes(id)) state = 'done';
+    if (s.inStack.includes(id)) state = 'stack';
+    if (s.active === id) state = 'active';
+    setNode(id, state);
+  });
+
+  // edges
+  ['e12','e13','e24','e25'].forEach(e => {
+    const el = document.getElementById(e);
+    if (!el) return;
+    const isDiam = s.diamEdges && DIAM_EDGES.includes(e);
+    el.setAttribute('stroke', isDiam ? '#f59e0b' : '#cbd5e1');
+    el.setAttribute('stroke-width', isDiam ? '4' : '2.2');
+  });
+
+  // depth labels
+  [1,2,3,4,5].forEach(id => {
+    const el = document.getElementById('dl' + id);
+    if (el) el.setAttribute('opacity', s.depths[id] !== undefined ? '1' : '0');
+  });
+
+  // depth chips
+  [1,2,3,4,5].forEach(id => {
+    const chip = document.getElementById('dc' + id);
+    if (chip) chip.classList.toggle('visible', s.depths[id] !== undefined);
+  });
+
+  // answer
+  const av = document.getElementById('answerValue');
+  av.textContent = s.answer;
+  if (s.answer !== prevAnswer && prevAnswer >= 0) {
+    av.classList.add('pop');
+    setTimeout(() => av.classList.remove('pop'), 450);
+  }
+  prevAnswer = s.answer;
+
+  // frame
+  if (s.frame) {
+    document.getElementById('fNode').textContent  = s.frame.node;
+    document.getElementById('fLeft').textContent  = s.frame.left;
+    document.getElementById('fRight').textContent = s.frame.right;
+    document.getElementById('fRet').textContent   = s.frame.ret;
+  } else {
+    ['fNode','fLeft','fRight','fRet'].forEach(id => document.getElementById(id).textContent = '—');
+  }
+
+  // call stack
+  const sr = document.getElementById('stackRow');
+  const stackAll = [...s.inStack, ...(s.active ? [s.active] : [])];
+  if (stackAll.length === 0) {
+    sr.innerHTML = '<span style="color:#aaa;font-size:13px">vazia</span>';
+  } else {
+    sr.innerHTML = s.inStack.map(id =>
+      `<div class="stack-chip waiting-chip">GetEdgeDepth(${id})</div>`
+    ).join('') + (s.active ? `<div class="stack-chip active-chip">GetEdgeDepth(${s.active}) ← topo</div>` : '');
+  }
+
+  // step info & progress
+  document.getElementById('stepInfo').innerHTML = s.info;
+  const pct = Math.round(idx / (steps.length - 1) * 100);
+  const pf = document.getElementById('progressFill');
+  pf.style.width = pct + '%'; pf.textContent = pct + '%';
+  document.getElementById('stepBtn').disabled = idx >= steps.length - 1;
+  document.getElementById('playBtn').disabled = idx >= steps.length - 1;
+}
+
+function stepFwd() { if (current < steps.length - 1) { current++; render(current); } }
+
+function play() {
+  if (timer) return;
+  document.getElementById('playBtn').disabled = true;
+  const speed = parseInt(document.getElementById('speedRange').value);
+  timer = setInterval(() => {
+    if (current < steps.length - 1) { current++; render(current); }
+    else { clearInterval(timer); timer = null; }
+  }, speed);
+}
+
+function reset() {
+  clearInterval(timer); timer = null; prevAnswer = -1;
+  current = 0; render(0);
+  document.getElementById('playBtn').disabled = false;
+}
+
+document.getElementById('speedRange').addEventListener('input', function () {
+  document.getElementById('speedLabel').textContent = this.value + 'ms';
+  if (timer) { clearInterval(timer); timer = null; play(); }
+});
+
+render(0);
+</script>
+</body>
+</html>
