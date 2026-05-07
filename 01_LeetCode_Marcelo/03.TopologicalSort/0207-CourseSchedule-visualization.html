@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Visualizacao: 0207 - Course Schedule</title>
+	<style>
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+			padding: 20px; min-height: 100vh;
+		}
+		.container {
+			max-width: 1100px; margin: 0 auto; background: white;
+			border-radius: 20px; padding: 30px;
+			box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+		}
+		h1 { color: #10b981; text-align: center; margin-bottom: 8px; font-size: 2.1em; }
+		.subtitle { text-align: center; color: #666; margin-bottom: 26px; font-size: 1.05em; }
+
+		.explanation {
+			background: #f0fdf4; padding: 20px; border-radius: 10px;
+			margin-bottom: 26px; border-left: 5px solid #10b981;
+		}
+		.explanation h2 { color: #10b981; margin-bottom: 12px; }
+		.explanation p  { line-height: 1.8; color: #333; margin-bottom: 8px; }
+		.explanation code {
+			background: #dcfce7; padding: 2px 6px; border-radius: 3px;
+			font-family: 'Courier New', monospace; color: #065f46;
+		}
+
+		.controls {
+			display: flex; gap: 12px; margin-bottom: 26px;
+			flex-wrap: wrap; justify-content: center; align-items: center;
+		}
+		button {
+			background: #10b981; color: white; border: none;
+			padding: 11px 20px; border-radius: 8px; cursor: pointer;
+			font-size: 15px; font-weight: 600; transition: all 0.25s;
+			box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+		}
+		button:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(16,185,129,0.55); }
+		button:disabled { background: #d1d5db; cursor: not-allowed; transform: none; box-shadow: none; }
+		button#stepBtn { background: #14b8a6; box-shadow: 0 4px 12px rgba(20,184,166,0.4); }
+		button#stepBtn:hover { background: #0d9488; }
+		button#stepBtn:disabled { background: #d1d5db; box-shadow: none; }
+		.speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+		input[type="range"] { width: 130px; accent-color: #10b981; }
+
+		/* ─── Visualization ─── */
+		.visualization {
+			background: #fafafa; padding: 22px 20px 18px;
+			border-radius: 12px; margin-bottom: 22px; border: 2px solid #a7f3d0;
+		}
+		.visualization h3 { text-align: center; color: #10b981; margin-bottom: 16px; }
+
+		.legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+		.legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+		.legend-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; border: 2px solid transparent; }
+
+		/* Canvas */
+		#graphCanvas {
+			display: block; margin: 0 auto 18px;
+			border-radius: 10px; background: white;
+			border: 1px solid #e2e8f0;
+		}
+
+		/* Adjacency matrix */
+		.matrix-section {
+			display: flex; gap: 20px; justify-content: center;
+			flex-wrap: wrap; margin-bottom: 16px;
+		}
+		.matrix-box {
+			background: white; border-radius: 10px;
+			border: 2px solid #d1fae5; padding: 14px;
+		}
+		.matrix-box h4 { color: #10b981; font-size: 13px; margin-bottom: 10px; text-align: center; }
+		table.adj-matrix { border-collapse: collapse; }
+		table.adj-matrix th, table.adj-matrix td {
+			width: 40px; height: 40px; text-align: center; vertical-align: middle;
+			font-size: 14px; font-weight: 600; border: 1px solid #e5e7eb;
+		}
+		table.adj-matrix th { background: #f0fdf4; color: #065f46; font-size: 12px; }
+		td.cell-true  { background: #dcfce7; color: #065f46; font-size: 16px; }
+		td.cell-false { background: #f9fafb; color: #d1d5db; }
+		td.cell-active { background: #fef3c7; color: #92400e; border: 2px solid #f59e0b !important; }
+		td.cell-cycle  { background: #fee2e2; color: #991b1b; border: 2px solid #ef4444 !important; font-size: 16px; }
+
+		/* visited array */
+		.visited-section { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+		.visited-cell {
+			display: flex; flex-direction: column; align-items: center; gap: 4px;
+		}
+		.visited-label { font-size: 11px; color: #6b7280; }
+		.visited-box {
+			width: 44px; height: 44px; border-radius: 8px; border: 2px solid;
+			display: flex; align-items: center; justify-content: center;
+			font-weight: 700; font-size: 15px; transition: all 0.3s;
+		}
+
+		/* DFS stack */
+		.dfs-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+		.panel { background: white; border-radius: 8px; border: 2px solid #d1fae5; padding: 14px; }
+		.panel h4 { color: #10b981; font-size: 13px; margin-bottom: 10px; text-align: center; }
+		.stack-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; align-items: center; }
+		.stack-item {
+			padding: 5px 12px; border-radius: 20px; font-weight: 700;
+			font-size: 14px; border: 2px solid;
+		}
+		.result-badge {
+			display: inline-block; padding: 7px 22px; border-radius: 30px;
+			font-size: 18px; font-weight: 800; margin: 4px auto; font-family: 'Courier New', monospace;
+		}
+		.result-true  { background: #dcfce7; color: #065f46; border: 2px solid #10b981; }
+		.result-false { background: #fee2e2; color: #991b1b; border: 2px solid #ef4444; }
+		.result-pending { background: #f9fafb; color: #9ca3af; border: 2px dashed #d1d5db; }
+
+		.event-log {
+			padding: 12px 16px; background: #f0fdf4;
+			border-radius: 8px; border-left: 4px solid #10b981;
+			font-size: 14px; color: #065f46; min-height: 44px; line-height: 1.55;
+			margin-top: 12px;
+		}
+
+		/* ─── Stats ─── */
+		.stats {
+			display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+			gap: 14px; margin-bottom: 22px;
+		}
+		.stat-card {
+			background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+			color: white; padding: 16px; border-radius: 12px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		}
+		.stat-label { font-size: 12px; opacity: 0.85; margin-bottom: 5px; }
+		.stat-value { font-size: 20px; font-weight: bold; font-family: 'Courier New', monospace; }
+
+		/* ─── Algorithm steps ─── */
+		.algorithm-steps { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 22px; }
+		.algorithm-steps h3 { color: #10b981; margin-bottom: 14px; }
+		.step {
+			padding: 11px 15px; margin-bottom: 8px; border-radius: 8px;
+			background: white; border-left: 4px solid #e5e7eb;
+			transition: all 0.3s; font-size: 14px; line-height: 1.55;
+		}
+		.step.active { border-left-color: #10b981; background: #f0fdf4; transform: translateX(5px); }
+		.step-number {
+			display: inline-block; width: 26px; height: 26px; background: #10b981;
+			color: white; border-radius: 50%; text-align: center; line-height: 26px;
+			margin-right: 10px; font-weight: bold; font-size: 13px;
+		}
+
+		/* ─── Complexity ─── */
+		.complexity-info { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+		.complexity-card { background: #f0fdf4; padding: 18px; border-radius: 10px; border-left: 5px solid #10b981; }
+		.complexity-card h3 { color: #10b981; margin-bottom: 8px; }
+		.complexity-card p  { line-height: 1.7; color: #374151; }
+
+		/* ─── Code ─── */
+		.code-section { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px; overflow-x: auto; }
+		.code-section h3 { color: #d4d4d4; margin-bottom: 14px; }
+		.code-section pre { font-family: 'Courier New', monospace; line-height: 1.75; font-size: 13px; }
+
+		@media (max-width: 700px) {
+			h1 { font-size: 1.5em; }
+			.complexity-info, .dfs-panels { grid-template-columns: 1fr; }
+			#graphCanvas { width: 100% !important; height: auto !important; }
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+
+	<h1>🎓 Course Schedule</h1>
+	<p class="subtitle">Deteccao de Ciclo com DFS (Grafo Dirigido) &mdash; LeetCode Problema 0207</p>
+
+	<div class="explanation">
+		<h2>📖 Qual e o Problema?</h2>
+		<p>
+			Dados <code>numCourses</code> e uma lista de <code>prerequisites</code>, determine se e possivel
+			concluir todos os cursos. E possivel se e somente se o grafo de prerequisitos <strong>nao tiver ciclo</strong>.
+		</p>
+		<p>
+			Este visualizador usa <code>CanFinishTest_2</code>:
+			<br>
+			<strong>numCourses = 2, prerequisites = [[1,0], [0,1]]</strong>
+			<br>
+			Resultado esperado: <strong>false</strong> (ha um ciclo: curso 0 precisa do 1, e curso 1 precisa do 0)
+		</p>
+		<p>
+			Para cada prerequisito <code>[a,b]</code>: <em>"b deve ser feito antes de a"</em>,
+			logo a aresta no grafo aponta <code>b → a</code> (<code>adj[b,a] = true</code>).
+			O DFS detecta o ciclo quando encontra um no <strong>ja em visita</strong> (<code>visited = 1</code>).
+		</p>
+	</div>
+
+	<div class="controls">
+		<button id="startBtn" onclick="startVisualization()">&#9654;&#65039; Iniciar</button>
+		<button id="pauseBtn" onclick="pauseVisualization()" disabled>&#9208;&#65039; Pausar</button>
+		<button id="stepBtn"  onclick="doStep()">&#9197;&#65039; Passo</button>
+		<button id="resetBtn" onclick="resetVisualization()">&#128260; Resetar</button>
+		<div class="speed-control">
+			<label for="speedRange">Velocidade:</label>
+			<input type="range" id="speedRange" min="300" max="2500" value="900" step="100">
+			<span id="speedValue">900ms</span>
+		</div>
+	</div>
+
+	<!-- Visualization -->
+	<div class="visualization">
+		<h3>Grafo de Prerequisitos &nbsp;|&nbsp; Deteccao de Ciclo via DFS</h3>
+
+		<div class="legend">
+			<div class="legend-item"><div class="legend-dot" style="background:#f9fafb;border-color:#9ca3af;"></div>Nao visitado (0)</div>
+			<div class="legend-item"><div class="legend-dot" style="background:#fef3c7;border-color:#f59e0b;"></div>Em visita — grey (1)</div>
+			<div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#10b981;"></div>Concluido — black (2)</div>
+			<div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#ef4444;"></div>CICLO detectado</div>
+		</div>
+
+		<!-- Graph canvas -->
+		<canvas id="graphCanvas" width="640" height="230"></canvas>
+
+		<!-- Adjacency matrix + visited array -->
+		<div class="matrix-section">
+			<div class="matrix-box">
+				<h4>Matriz de Adjacencia adj[i,j]</h4>
+				<table class="adj-matrix" id="adjTable">
+					<tr>
+						<th></th><th>j=0</th><th>j=1</th>
+					</tr>
+					<tr>
+						<th>i=0</th>
+						<td id="c00" class="cell-false">F</td>
+						<td id="c01" class="cell-false">F</td>
+					</tr>
+					<tr>
+						<th>i=1</th>
+						<td id="c10" class="cell-false">F</td>
+						<td id="c11" class="cell-false">F</td>
+					</tr>
+				</table>
+			</div>
+
+			<div class="matrix-box">
+				<h4>Array visited[i]</h4>
+				<div class="visited-section" id="visitedSection">
+					<div class="visited-cell">
+						<div class="visited-label">i = 0</div>
+						<div class="visited-box" id="v0" style="background:#f9fafb;border-color:#9ca3af;color:#6b7280;">0</div>
+					</div>
+					<div class="visited-cell">
+						<div class="visited-label">i = 1</div>
+						<div class="visited-box" id="v1" style="background:#f9fafb;border-color:#9ca3af;color:#6b7280;">0</div>
+					</div>
+				</div>
+				<div style="margin-top:10px;font-size:11px;color:#6b7280;text-align:center;">
+					0 = nao visitado &nbsp;|&nbsp; 1 = em visita &nbsp;|&nbsp; 2 = concluido
+				</div>
+			</div>
+		</div>
+
+		<!-- DFS panels -->
+		<div class="dfs-panels">
+			<div class="panel">
+				<h4>📥 Call Stack (DFS)</h4>
+				<div class="stack-list" id="dfsStack">
+					<span style="color:#9ca3af;font-size:13px;">Vazia</span>
+				</div>
+			</div>
+			<div class="panel">
+				<h4>🔎 Resultado de CanFinish</h4>
+				<div style="text-align:center;padding:4px;">
+					<span class="result-badge result-pending" id="resultBadge">?</span>
+				</div>
+			</div>
+		</div>
+
+		<div class="event-log" id="eventLog">
+			Clique em "Iniciar" ou "Passo" para comecar a visualizacao&hellip;
+		</div>
+	</div>
+
+	<!-- Stats -->
+	<div class="stats">
+		<div class="stat-card">
+			<div class="stat-label">Fase atual</div>
+			<div class="stat-value" id="statPhase">—</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">No em DFS</div>
+			<div class="stat-value" id="statNode">—</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Arestas no grafo</div>
+			<div class="stat-value" id="statEdges">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Ciclo detectado?</div>
+			<div class="stat-value" id="statCycle">Nao</div>
+		</div>
+	</div>
+
+	<!-- Algorithm steps -->
+	<div class="algorithm-steps">
+		<h3>🔍 Passos do Algoritmo</h3>
+		<div class="step" id="step1">
+			<span class="step-number">1</span>
+			<strong>BuildGraph:</strong> Para cada prerequisito <code>[a,b]</code>, marcar <code>adj[b,a] = true</code>. A aresta vai de b para a (b deve ser feito antes de a).
+		</div>
+		<div class="step" id="step2">
+			<span class="step-number">2</span>
+			<strong>Loop externo:</strong> Para cada no com <code>visited[i] == 0</code>, iniciar DFS a partir dele.
+		</div>
+		<div class="step" id="step3">
+			<span class="step-number">3</span>
+			<strong>DFS - entrar no no:</strong> Marcar <code>visited[i] = 1</code> (grey = "em visita na pilha atual").
+		</div>
+		<div class="step" id="step4">
+			<span class="step-number">4</span>
+			<strong>DFS - explorar vizinhos:</strong> Para cada aresta <code>i→j</code>: se <code>visited[j] == 1</code> → CICLO → retornar <code>false</code>. Se <code>visited[j] == 0</code> → recursao.
+		</div>
+		<div class="step" id="step5">
+			<span class="step-number">5</span>
+			<strong>Ciclo detectado!</strong> Um vizinho ja esta na pilha atual (visited = 1), logo ha dependencia circular. <code>CanFinish</code> retorna <code>false</code>.
+		</div>
+		<div class="step" id="step6">
+			<span class="step-number">6</span>
+			<strong>Resultado final:</strong> <code>false</code> — nao e possivel concluir todos os cursos.
+		</div>
+	</div>
+
+	<!-- Complexity -->
+	<div class="complexity-info">
+		<div class="complexity-card">
+			<h3>⏱️ Complexidade de Tempo</h3>
+			<p><strong>O(V + E)</strong></p>
+			<p>V = numCourses (nos), E = prerequisites (arestas). O DFS visita cada no e aresta no maximo uma vez.</p>
+		</div>
+		<div class="complexity-card">
+			<h3>💾 Complexidade de Espaco</h3>
+			<p><strong>O(V²)</strong> — matriz de adjacencia</p>
+			<p>A matriz <code>bool[V,V]</code> ocupa O(V²). O array <code>visited[V]</code> e a pilha de recursao sao O(V).</p>
+		</div>
+	</div>
+
+	<!-- Code -->
+	<div class="code-section">
+		<h3>💻 Implementacao em C#</h3>
+		<pre>
+<span style="color:#569cd6;">public bool</span> <span style="color:#dcdcaa;">CanFinish</span>(<span style="color:#569cd6;">int</span> numCourses, <span style="color:#569cd6;">int</span>[][] prerequisites)
+{
+    <span style="color:#c586c0;">var</span> adj = <span style="color:#c586c0;">new</span> <span style="color:#569cd6;">bool</span>[numCourses, numCourses];
+    BuildGraph(adj, prerequisites);               <span style="color:#6a9955;">// [a,b] → adj[b,a] = true</span>
+
+    <span style="color:#c586c0;">var</span> visited = <span style="color:#c586c0;">new</span> <span style="color:#569cd6;">int</span>[numCourses];
+    <span style="color:#c586c0;">for</span> (<span style="color:#569cd6;">int</span> i = <span style="color:#b5cea8;">0</span>; i &lt; numCourses; i++)
+        <span style="color:#c586c0;">if</span> (visited[i] == <span style="color:#b5cea8;">0</span> &amp;&amp; !DFS(adj, visited, i, numCourses))
+            <span style="color:#c586c0;">return false</span>;
+    <span style="color:#c586c0;">return true</span>;
+}
+
+<span style="color:#569cd6;">private bool</span> <span style="color:#dcdcaa;">DFS</span>(<span style="color:#569cd6;">bool</span>[,] adj, <span style="color:#569cd6;">int</span>[] visited, <span style="color:#569cd6;">int</span> i, <span style="color:#569cd6;">int</span> numCourses)
+{
+    visited[i] = <span style="color:#b5cea8;">1</span>;                               <span style="color:#6a9955;">// grey: in current path</span>
+    <span style="color:#c586c0;">for</span> (<span style="color:#569cd6;">int</span> j = <span style="color:#b5cea8;">0</span>; j &lt; numCourses; j++)
+    {
+        <span style="color:#c586c0;">if</span> (adj[i, j])
+        {
+            <span style="color:#c586c0;">if</span> (visited[j] == <span style="color:#b5cea8;">1</span>) <span style="color:#c586c0;">return false</span>;  <span style="color:#6a9955;">// cycle!</span>
+            <span style="color:#c586c0;">if</span> (visited[j] == <span style="color:#b5cea8;">0</span>)
+                <span style="color:#c586c0;">if</span> (!DFS(adj, visited, j, numCourses)) <span style="color:#c586c0;">return false</span>;
+        }
+    }
+    visited[i] = <span style="color:#b5cea8;">2</span>;                               <span style="color:#6a9955;">// black: fully explored</span>
+    <span style="color:#c586c0;">return true</span>;
+}</pre>
+	</div>
+</div>
+<script>
+// ─── Problem data ───
+// CanFinishTest_2: numCourses=2, prerequisites=[[1,0],[0,1]] → false
+// BuildGraph:
+//   [1,0] → adj[0,1] = true  (edge 0 → 1: "course 0 must come before course 1")
+//   [0,1] → adj[1,0] = true  (edge 1 → 0: "course 1 must come before course 0")
+// DFS(0): visited[0]=1 → adj[0,1]=true, visited[1]=0 → DFS(1)
+//   DFS(1): visited[1]=1 → adj[1,0]=true, visited[0]==1 → CYCLE! return false
+// CanFinish = false
+
+// Node positions (canvas 640x230)
+const NODE_POS = [
+	{x: 180, y: 115, label: '0', sublabel: 'Curso 0'},
+	{x: 460, y: 115, label: '1', sublabel: 'Curso 1'},
+];
+
+// ─── Pre-compute steps ───
+function buildSteps() {
+	const steps = [];
+
+	// Step 0 — init
+	steps.push({
+		phase: 'init',
+		adj: [[false,false],[false,false]],
+		visited: [0, 0],
+		stack: [],
+		activeEdge: null,   // {from,to}
+		cycleEdge: null,
+		node: null,
+		result: null,
+		event: 'Inicializacao: numCourses=2, prerequisites=[[1,0],[0,1]]. adj[2,2] = false. visited=[0,0].'
+	});
+
+	// Step 1 — add edge [1,0] → adj[0,1]=true
+	steps.push({
+		phase: 'build_edge',
+		adj: [[false,true],[false,false]],
+		visited: [0, 0],
+		stack: [],
+		activeEdge: {from:0, to:1},
+		cycleEdge: null,
+		node: null,
+		result: null,
+		event: 'BuildGraph: prerequisito [1,0] → "curso 0 deve ser feito antes do 1". adj[0,1] = true. Aresta: 0 → 1.'
+	});
+
+	// Step 2 — add edge [0,1] → adj[1,0]=true
+	steps.push({
+		phase: 'build_edge',
+		adj: [[false,true],[true,false]],
+		visited: [0, 0],
+		stack: [],
+		activeEdge: {from:1, to:0},
+		cycleEdge: null,
+		node: null,
+		result: null,
+		event: 'BuildGraph: prerequisito [0,1] → "curso 1 deve ser feito antes do 0". adj[1,0] = true. Aresta: 1 → 0.'
+	});
+
+	// Step 3 — phase 2 start
+	steps.push({
+		phase: 'phase2',
+		adj: [[false,true],[true,false]],
+		visited: [0, 0],
+		stack: [],
+		activeEdge: null,
+		cycleEdge: null,
+		node: null,
+		result: null,
+		event: 'BuildGraph concluido. 2 arestas no grafo. Iniciando loop DFS externo: i=0..1.'
+	});
+
+	// Step 4 — outer loop i=0
+	steps.push({
+		phase: 'outer',
+		adj: [[false,true],[true,false]],
+		visited: [0, 0],
+		stack: [],
+		activeEdge: null,
+		cycleEdge: null,
+		node: 0,
+		result: null,
+		event: 'Loop externo: i=0, visited[0]=0 → chamar DFS(0).'
+	});
+
+	// Step 5 — DFS(0): visited[0]=1
+	steps.push({
+		phase: 'dfs_enter',
+		adj: [[false,true],[true,false]],
+		visited: [1, 0],
+		stack: [0],
+		activeEdge: null,
+		cycleEdge: null,
+		node: 0,
+		result: null,
+		event: 'DFS(0): visited[0] = 1 (grey). Verificando vizinhos de 0...'
+	});
+
+	// Step 6 — check adj[0,0]=false, then adj[0,1]=true → recurse DFS(1)
+	steps.push({
+		phase: 'dfs_edge',
+		adj: [[false,true],[true,false]],
+		visited: [1, 0],
+		stack: [0],
+		activeEdge: {from:0, to:1},
+		cycleEdge: null,
+		node: 0,
+		result: null,
+		event: 'DFS(0): adj[0,1]=true, visited[1]=0 → chamar DFS(1) recursivamente.'
+	});
+
+	// Step 7 — DFS(1): visited[1]=1
+	steps.push({
+		phase: 'dfs_enter',
+		adj: [[false,true],[true,false]],
+		visited: [1, 1],
+		stack: [0, 1],
+		activeEdge: null,
+		cycleEdge: null,
+		node: 1,
+		result: null,
+		event: 'DFS(1): visited[1] = 1 (grey). Verificando vizinhos de 1...'
+	});
+
+	// Step 8 — adj[1,0]=true, visited[0]=1 → CYCLE!
+	steps.push({
+		phase: 'cycle',
+		adj: [[false,true],[true,false]],
+		visited: [1, 1],
+		stack: [0, 1],
+		activeEdge: null,
+		cycleEdge: {from:1, to:0},
+		node: 1,
+		result: null,
+		event: '🔴 CICLO! adj[1,0]=true e visited[0]=1 (ja esta na pilha atual). Ciclo: 0 → 1 → 0. DFS retorna false!'
+	});
+
+	// Step 9 — done
+	steps.push({
+		phase: 'done',
+		adj: [[false,true],[true,false]],
+		visited: [1, 1],
+		stack: [],
+		activeEdge: null,
+		cycleEdge: {from:1, to:0},
+		node: null,
+		result: false,
+		event: '✅ CanFinish = false. Os cursos 0 e 1 tem dependencia circular — e impossivel concluir todos.'
+	});
+
+	return steps;
+}
+
+const STEPS = buildSteps();
+let stepIdx = 0, isRunning = false, intervalId = null;
+
+// ─── Drawing ───
+function drawArrow(ctx, fx, fy, tx, ty, color, lw, curvature, dashed) {
+	const dx = tx - fx, dy = ty - fy;
+	const len = Math.sqrt(dx*dx + dy*dy);
+	if (len < 1) return;
+	const ux = dx/len, uy = dy/len;
+	const R = 30;
+	const sx = fx + ux*R, sy = fy + uy*R;
+	const ex = tx - ux*R, ey = ty - uy*R;
+
+	// Bezier control point (perpendicular offset for curvature)
+	const mx = (sx+ex)/2 - uy*curvature;
+	const my = (sy+ey)/2 + ux*curvature;
+
+	ctx.save();
+	ctx.strokeStyle = color;
+	ctx.lineWidth = lw;
+	if (dashed) ctx.setLineDash([6, 4]);
+	else ctx.setLineDash([]);
+	ctx.beginPath();
+	ctx.moveTo(sx, sy);
+	ctx.quadraticCurveTo(mx, my, ex, ey);
+	ctx.stroke();
+	ctx.setLineDash([]);
+
+	// Arrowhead tangent along curve at t=1
+	const tangX = ex - (mx + (ex - mx)*0);  // approx: direction from mid to end
+	const tangY = ey - (my + (ey - my)*0);
+	const angle = Math.atan2(ey - my, ex - mx);
+	const aLen = 11;
+	ctx.fillStyle = color;
+	ctx.beginPath();
+	ctx.moveTo(ex, ey);
+	ctx.lineTo(ex - aLen*Math.cos(angle - Math.PI/6), ey - aLen*Math.sin(angle - Math.PI/6));
+	ctx.lineTo(ex - aLen*Math.cos(angle + Math.PI/6), ey - aLen*Math.sin(angle + Math.PI/6));
+	ctx.closePath();
+	ctx.fill();
+	ctx.restore();
+}
+
+function drawGraph(s) {
+	const canvas = document.getElementById('graphCanvas');
+	const ctx = canvas.getContext('2d');
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+	const adj = s.adj;
+
+	// Draw background label
+	ctx.font = '12px Segoe UI';
+	ctx.fillStyle = '#94a3b8';
+	ctx.textAlign = 'center';
+	ctx.fillText('prerequisitos: [[1,0], [0,1]]  |  numCourses = 2', canvas.width/2, 20);
+
+	// Draw edges
+	// Edge 0→1 (top arc, curvature -50)
+	if (adj[0][1]) {
+		const isCycleEdge = s.cycleEdge && s.cycleEdge.from === 0 && s.cycleEdge.to === 1;
+		const isActive = s.activeEdge && s.activeEdge.from === 0 && s.activeEdge.to === 1;
+		const color = isCycleEdge ? '#ef4444' : isActive ? '#f59e0b' : '#10b981';
+		const lw = (isCycleEdge || isActive) ? 3.5 : 2;
+		drawArrow(ctx, NODE_POS[0].x, NODE_POS[0].y, NODE_POS[1].x, NODE_POS[1].y, color, lw, -55, false);
+		ctx.font = '12px Segoe UI';
+		ctx.fillStyle = isActive ? '#f59e0b' : '#059669';
+		ctx.textAlign = 'center';
+		ctx.fillText('0 → 1', (NODE_POS[0].x + NODE_POS[1].x)/2, NODE_POS[0].y - 65);
+	}
+	// Edge 1→0 (bottom arc, curvature +55)
+	if (adj[1][0]) {
+		const isCycleEdge = s.cycleEdge && s.cycleEdge.from === 1 && s.cycleEdge.to === 0;
+		const isActive = s.activeEdge && s.activeEdge.from === 1 && s.activeEdge.to === 0;
+		const color = isCycleEdge ? '#ef4444' : isActive ? '#f59e0b' : '#10b981';
+		const lw = (isCycleEdge || isActive) ? 3.5 : 2;
+		drawArrow(ctx, NODE_POS[1].x, NODE_POS[1].y, NODE_POS[0].x, NODE_POS[0].y, color, lw, -55, false);
+		ctx.font = '12px Segoe UI';
+		ctx.fillStyle = isCycleEdge ? '#ef4444' : isActive ? '#f59e0b' : '#059669';
+		ctx.textAlign = 'center';
+		ctx.fillText('1 → 0', (NODE_POS[0].x + NODE_POS[1].x)/2, NODE_POS[0].y + 75);
+	}
+
+	// Cycle annotation
+	if (s.cycleEdge) {
+		ctx.save();
+		ctx.font = 'bold 15px Segoe UI';
+		ctx.fillStyle = '#ef4444';
+		ctx.textAlign = 'center';
+		ctx.fillText('🔴 CICLO DETECTADO!', canvas.width/2, NODE_POS[0].y);
+		ctx.restore();
+	}
+
+	// Draw nodes
+	NODE_POS.forEach((pos, i) => {
+		const v = s.visited[i];
+		const isActive = s.node === i;
+		const isCycle = s.cycleEdge && (s.cycleEdge.from === i || s.cycleEdge.to === i);
+
+		let fill, stroke, textColor;
+		if (isCycle)        { fill='#fee2e2'; stroke='#ef4444'; textColor='#991b1b'; }
+		else if (v === 2)   { fill='#d1fae5'; stroke='#10b981'; textColor='#065f46'; }
+		else if (v === 1)   { fill='#fef3c7'; stroke='#f59e0b'; textColor='#92400e'; }
+		else                { fill='#f0fdf4'; stroke='#a7f3d0'; textColor='#065f46'; }
+
+		ctx.beginPath();
+		ctx.arc(pos.x, pos.y, 30, 0, Math.PI*2);
+		ctx.fillStyle = fill;
+		ctx.fill();
+		ctx.strokeStyle = stroke;
+		ctx.lineWidth = isActive ? 4.5 : 2.5;
+		ctx.stroke();
+
+		ctx.fillStyle = textColor;
+		ctx.font = 'bold 20px Segoe UI';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(pos.label, pos.x, pos.y);
+
+		ctx.font = '12px Segoe UI';
+		ctx.fillStyle = '#6b7280';
+		ctx.textBaseline = 'top';
+		ctx.fillText(pos.sublabel, pos.x, pos.y + 38);
+	});
+}
+
+function updateMatrix(s) {
+	const adj = s.adj;
+	const cells = [['c00','c01'],['c10','c11']];
+	for (let i = 0; i < 2; i++) {
+		for (let j = 0; j < 2; j++) {
+			const el = document.getElementById(cells[i][j]);
+			const val = adj[i][j];
+			const isCycle = s.cycleEdge && s.cycleEdge.from === i && s.cycleEdge.to === j;
+			const isActive = s.activeEdge && s.activeEdge.from === i && s.activeEdge.to === j;
+			el.className = isCycle ? 'cell-cycle' : isActive ? 'cell-active' : val ? 'cell-true' : 'cell-false';
+			el.textContent = val ? 'T' : 'F';
+		}
+	}
+}
+
+function updateVisited(s) {
+	s.visited.forEach((v, i) => {
+		const el = document.getElementById(`v${i}`);
+		const isCycle = s.cycleEdge && (s.cycleEdge.from === i || s.cycleEdge.to === i);
+		let bg, border, color;
+		if (isCycle)      { bg='#fee2e2'; border='#ef4444'; color='#991b1b'; }
+		else if (v === 2) { bg='#d1fae5'; border='#10b981'; color='#065f46'; }
+		else if (v === 1) { bg='#fef3c7'; border='#f59e0b'; color='#92400e'; }
+		else              { bg='#f9fafb'; border='#9ca3af'; color='#6b7280'; }
+		el.style.cssText = `background:${bg};border-color:${border};color:${color};width:44px;height:44px;border-radius:8px;border:2px solid;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;transition:all 0.3s;`;
+		el.textContent = v;
+	});
+}
+
+function updateStack(s) {
+	const el = document.getElementById('dfsStack');
+	el.innerHTML = '';
+	s.stack.forEach((n, i) => {
+		const span = document.createElement('span');
+		span.className = 'stack-item';
+		const isTop = i === s.stack.length - 1;
+		span.style.background  = isTop ? '#fef3c7' : '#f0fdf4';
+		span.style.borderColor = isTop ? '#f59e0b' : '#a7f3d0';
+		span.style.color       = isTop ? '#92400e' : '#065f46';
+		span.textContent = `DFS(${n})`;
+		el.appendChild(span);
+	});
+	if (s.stack.length === 0) el.innerHTML = '<span style="color:#9ca3af;font-size:13px;">Vazia</span>';
+}
+
+function updateResult(s) {
+	const el = document.getElementById('resultBadge');
+	if (s.result === null) {
+		el.className = 'result-badge result-pending';
+		el.textContent = '?';
+	} else if (s.result === true) {
+		el.className = 'result-badge result-true';
+		el.textContent = 'true';
+	} else {
+		el.className = 'result-badge result-false';
+		el.textContent = 'false';
+	}
+}
+
+function setActiveStep(n) {
+	for (let i = 1; i <= 6; i++) document.getElementById(`step${i}`).classList.remove('active');
+	if (n > 0) document.getElementById(`step${n}`).classList.add('active');
+}
+
+function renderStep(s) {
+	drawGraph(s);
+	updateMatrix(s);
+	updateVisited(s);
+	updateStack(s);
+	updateResult(s);
+
+	const edgeCount = s.adj[0][1] + s.adj[1][0];
+	document.getElementById('statEdges').textContent  = edgeCount;
+	document.getElementById('statNode').textContent   = s.node !== null ? `Curso ${s.node}` : '—';
+	document.getElementById('statCycle').textContent  = s.cycleEdge ? '🔴 SIM' : 'Nao';
+	document.getElementById('eventLog').textContent   = s.event;
+
+	const phaseLabels = {
+		init:'Init', build_edge:'BuildGraph', phase2:'DFS (inicio)',
+		outer:'DFS loop', dfs_enter:'DFS ativo', dfs_edge:'DFS ativo',
+		cycle:'Ciclo!', done:'Concluido'
+	};
+	document.getElementById('statPhase').textContent = phaseLabels[s.phase] || s.phase;
+
+	const stepMap = {
+		init:1, build_edge:1, phase2:2, outer:2,
+		dfs_enter:3, dfs_edge:4, cycle:5, done:6
+	};
+	setActiveStep(stepMap[s.phase] || 0);
+}
+
+function advance() {
+	if (stepIdx >= STEPS.length - 1) {
+		renderStep(STEPS[STEPS.length - 1]);
+		clearInterval(intervalId); isRunning = false;
+		document.getElementById('startBtn').disabled = false;
+		document.getElementById('pauseBtn').disabled = true;
+		return;
+	}
+	stepIdx++;
+	renderStep(STEPS[stepIdx]);
+}
+
+function startVisualization() {
+	if (stepIdx >= STEPS.length - 1) resetVisualization();
+	isRunning = true;
+	document.getElementById('startBtn').disabled = true;
+	document.getElementById('pauseBtn').disabled = false;
+	const speed = parseInt(document.getElementById('speedRange').value);
+	intervalId = setInterval(advance, speed);
+}
+function pauseVisualization() {
+	isRunning = false; clearInterval(intervalId);
+	document.getElementById('startBtn').disabled = false;
+	document.getElementById('pauseBtn').disabled = true;
+}
+function doStep() {
+	if (stepIdx >= STEPS.length - 1) { resetVisualization(); return; }
+	if (isRunning) pauseVisualization();
+	advance();
+}
+function resetVisualization() {
+	clearInterval(intervalId); isRunning = false; stepIdx = 0;
+	document.getElementById('startBtn').disabled = false;
+	document.getElementById('pauseBtn').disabled = true;
+	renderStep(STEPS[0]);
+}
+document.getElementById('speedRange').addEventListener('input', function () {
+	document.getElementById('speedValue').textContent = this.value + 'ms';
+	if (isRunning) { clearInterval(intervalId); intervalId = setInterval(advance, parseInt(this.value)); }
+});
+window.onload = function () { renderStep(STEPS[0]); };
+</script>
+</body>
+</html>

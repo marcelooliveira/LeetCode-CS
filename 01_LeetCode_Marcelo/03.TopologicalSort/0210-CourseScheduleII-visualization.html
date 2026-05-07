@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Visualizacao: 0210 - Course Schedule II</title>
+	<style>
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+			padding: 20px; min-height: 100vh;
+		}
+		.container {
+			max-width: 1100px; margin: 0 auto; background: white;
+			border-radius: 20px; padding: 30px;
+			box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+		}
+		h1 { color: #0ea5e9; text-align: center; margin-bottom: 8px; font-size: 2.1em; }
+		.subtitle { text-align: center; color: #666; margin-bottom: 26px; font-size: 1.05em; }
+
+		.explanation {
+			background: #f0f9ff; padding: 20px; border-radius: 10px;
+			margin-bottom: 26px; border-left: 5px solid #0ea5e9;
+		}
+		.explanation h2 { color: #0ea5e9; margin-bottom: 12px; }
+		.explanation p  { line-height: 1.8; color: #333; margin-bottom: 8px; }
+		.explanation code {
+			background: #e0f2fe; padding: 2px 6px; border-radius: 3px;
+			font-family: 'Courier New', monospace; color: #0c4a6e;
+		}
+
+		.controls {
+			display: flex; gap: 12px; margin-bottom: 26px;
+			flex-wrap: wrap; justify-content: center; align-items: center;
+		}
+		button {
+			background: #0ea5e9; color: white; border: none;
+			padding: 11px 20px; border-radius: 8px; cursor: pointer;
+			font-size: 15px; font-weight: 600; transition: all 0.25s;
+			box-shadow: 0 4px 12px rgba(14,165,233,0.4);
+		}
+		button:hover { background: #0284c7; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(14,165,233,0.55); }
+		button:disabled { background: #d1d5db; cursor: not-allowed; transform: none; box-shadow: none; }
+		button#stepBtn { background: #6366f1; box-shadow: 0 4px 12px rgba(99,102,241,0.4); }
+		button#stepBtn:hover { background: #4f46e5; }
+		button#stepBtn:disabled { background: #d1d5db; box-shadow: none; }
+		.speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+		input[type="range"] { width: 130px; }
+
+		/* ─── Visualization ─── */
+		.visualization {
+			background: #fafafa; padding: 22px 20px 18px;
+			border-radius: 12px; margin-bottom: 22px; border: 2px solid #bae6fd;
+		}
+		.visualization h3 { text-align: center; color: #0ea5e9; margin-bottom: 16px; }
+
+		.legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+		.legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+		.legend-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; border: 2px solid transparent; }
+
+		/* ─── Graph Canvas ─── */
+		#graphCanvas {
+			display: block; margin: 0 auto 16px;
+			border-radius: 8px; background: white;
+			border: 1px solid #e2e8f0;
+		}
+
+		/* ─── DFS call stack ─── */
+		.dfs-panels {
+			display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;
+		}
+		.panel {
+			background: white; border-radius: 8px; border: 2px solid #e2e8f0;
+			padding: 14px;
+		}
+		.panel h4 { color: #0ea5e9; font-size: 13px; margin-bottom: 10px; text-align: center; }
+		.stack-list {
+			display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; align-items: center;
+		}
+		.stack-item {
+			padding: 4px 12px; border-radius: 20px; font-weight: 700;
+			font-size: 15px; border: 2px solid;
+		}
+		.result-list { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; min-height: 36px; }
+		.result-item {
+			width: 36px; height: 36px; border-radius: 50%;
+			display: flex; align-items: center; justify-content: center;
+			font-weight: 700; font-size: 15px; border: 2px solid;
+		}
+
+		.event-log {
+			padding: 12px 16px; background: #f0f9ff;
+			border-radius: 8px; border-left: 4px solid #0ea5e9;
+			font-size: 14px; color: #0c4a6e; min-height: 44px; line-height: 1.55;
+		}
+
+		/* ─── Stats ─── */
+		.stats {
+			display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+			gap: 14px; margin-bottom: 22px;
+		}
+		.stat-card {
+			background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+			color: white; padding: 16px; border-radius: 12px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		}
+		.stat-label { font-size: 12px; opacity: 0.85; margin-bottom: 5px; line-height: 1.3; }
+		.stat-value { font-size: 22px; font-weight: bold; font-family: 'Courier New', monospace; word-break: break-all; }
+
+		/* ─── Algorithm steps ─── */
+		.algorithm-steps { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 22px; }
+		.algorithm-steps h3 { color: #0ea5e9; margin-bottom: 14px; }
+		.step {
+			padding: 11px 15px; margin-bottom: 8px; border-radius: 8px;
+			background: white; border-left: 4px solid #e5e7eb;
+			transition: all 0.3s; font-size: 14px; line-height: 1.55;
+		}
+		.step.active { border-left-color: #0ea5e9; background: #f0f9ff; transform: translateX(5px); }
+		.step-number {
+			display: inline-block; width: 26px; height: 26px; background: #0ea5e9;
+			color: white; border-radius: 50%; text-align: center; line-height: 26px;
+			margin-right: 10px; font-weight: bold; font-size: 13px;
+		}
+
+		/* ─── Complexity ─── */
+		.complexity-info { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+		.complexity-card { background: #f0f9ff; padding: 18px; border-radius: 10px; border-left: 5px solid #0ea5e9; }
+		.complexity-card h3 { color: #0ea5e9; margin-bottom: 8px; }
+		.complexity-card p  { line-height: 1.7; color: #374151; }
+
+		/* ─── Code ─── */
+		.code-section { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px; overflow-x: auto; }
+		.code-section h3 { color: #d4d4d4; margin-bottom: 14px; }
+		.code-section pre { font-family: 'Courier New', monospace; line-height: 1.75; font-size: 14px; }
+
+		@media (max-width: 700px) {
+			h1 { font-size: 1.5em; }
+			.complexity-info { grid-template-columns: 1fr; }
+			.dfs-panels { grid-template-columns: 1fr; }
+			#graphCanvas { width: 100% !important; height: auto !important; }
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+
+	<h1>📚 Course Schedule II</h1>
+	<p class="subtitle">Topological Sort (DFS) &mdash; LeetCode Problema 0210</p>
+
+	<div class="explanation">
+		<h2>📖 Qual e o Problema?</h2>
+		<p>
+			Dado <code>numCourses</code> cursos (0 a n-1) e uma lista de pre-requisitos
+			<code>[a, b]</code> (para fazer <em>a</em> voce precisa ter feito <em>b</em>),
+			retorne uma ordem valida para completar todos os cursos.
+			Se houver ciclo, retorne array vazio.
+		</p>
+		<p>
+			Este visualizador usa o teste <code>CanFinishTest_3</code>:
+			<br>
+			<strong>numCourses = 4</strong>, prerequisites = <code>[[1,0],[2,0],[3,1],[3,2]]</code>
+			<br>
+			Resultado esperado: <strong>[0, 2, 1, 3]</strong>
+		</p>
+		<p>
+			A solucao usa <strong>DFS com 3 estados</strong>: <em>nao visitado (0)</em>,
+			<em>em visita (1, cinza)</em>, <em>concluido (2, preto)</em>.
+			Apos o DFS de cada no, ele e adicionado ao resultado (pos-ordem) &mdash;
+			apos reverter, temos a ordem topologica.
+		</p>
+	</div>
+
+	<div class="controls">
+		<button id="startBtn" onclick="startVisualization()">&#9654;&#65039; Iniciar</button>
+		<button id="pauseBtn" onclick="pauseVisualization()" disabled>&#9208;&#65039; Pausar</button>
+		<button id="stepBtn"  onclick="doStep()">&#9197;&#65039; Passo</button>
+		<button id="resetBtn" onclick="resetVisualization()">&#128260; Resetar</button>
+		<div class="speed-control">
+			<label for="speedRange">Velocidade:</label>
+			<input type="range" id="speedRange" min="300" max="2500" value="900" step="100">
+			<span id="speedValue">900ms</span>
+		</div>
+	</div>
+
+	<!-- Visualization -->
+	<div class="visualization">
+		<h3>Grafo de Pre-requisitos &mdash; 4 cursos</h3>
+		<div class="legend">
+			<div class="legend-item"><div class="legend-dot" style="background:#f3f4f6;border-color:#9ca3af;"></div>Nao visitado</div>
+			<div class="legend-item"><div class="legend-dot" style="background:#fef3c7;border-color:#f59e0b;"></div>Em visita (DFS ativo)</div>
+			<div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#10b981;"></div>Concluido (adicionado ao resultado)</div>
+			<div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border-color:#ef4444;"></div>Ciclo detectado!</div>
+		</div>
+
+		<canvas id="graphCanvas" width="640" height="280"></canvas>
+
+		<div class="dfs-panels">
+			<div class="panel">
+				<h4>📥 Pilha DFS (chamadas ativas)</h4>
+				<div class="stack-list" id="dfsStack"></div>
+			</div>
+			<div class="panel">
+				<h4>📤 Resultado (pos-ordem, sera revertido)</h4>
+				<div class="result-list" id="resultList"></div>
+			</div>
+		</div>
+
+		<div class="event-log" id="eventLog">
+			Clique em "Iniciar" ou "Passo" para comecar a visualizacao&hellip;
+		</div>
+	</div>
+
+	<!-- Stats -->
+	<div class="stats">
+		<div class="stat-card">
+			<div class="stat-label">No atual (DFS)</div>
+			<div class="stat-value" id="statCurrent">—</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Profundidade DFS</div>
+			<div class="stat-value" id="statDepth">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Resultado (pre-reversa)</div>
+			<div class="stat-value" id="statResult">[]</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Ordem final</div>
+			<div class="stat-value" id="statFinal">—</div>
+		</div>
+	</div>
+
+	<!-- Algorithm steps -->
+	<div class="algorithm-steps">
+		<h3>🔍 Passos do Algoritmo</h3>
+		<div class="step" id="step1">
+			<span class="step-number">1</span>
+			<strong>Construir grafo:</strong> matriz de adjacencia. Para cada <code>[a,b]</code>: <code>adj[b,a] = true</code> (b e pre-req de a)
+		</div>
+		<div class="step" id="step2">
+			<span class="step-number">2</span>
+			<strong>Iniciar DFS:</strong> para cada no ainda nao visitado (<code>visited[i] == 0</code>), chama DFS(i)
+		</div>
+		<div class="step" id="step3">
+			<span class="step-number">3</span>
+			<strong>Marcar em visita:</strong> <code>visited[i] = 1</code> (cinza &mdash; no na pilha DFS atual)
+		</div>
+		<div class="step" id="step4">
+			<span class="step-number">4</span>
+			<strong>Visitar vizinhos:</strong> para cada vizinho <code>j</code> de <code>adj[i,j]</code>: DFS recursivo se <code>visited[j] == 0</code>
+		</div>
+		<div class="step" id="step5">
+			<span class="step-number">5</span>
+			<strong>Concluir no:</strong> <code>visited[i] = 2</code>. Adicionar <code>i</code> ao resultado (pos-ordem &rarr; reverter no final)
+		</div>
+		<div class="step" id="step6">
+			<span class="step-number">6</span>
+			<strong>Reverter resultado:</strong> pos-ordem revertida = ordem topologica. Retorna array final
+		</div>
+	</div>
+
+	<!-- Complexity -->
+	<div class="complexity-info">
+		<div class="complexity-card">
+			<h3>⏱️ Complexidade de Tempo</h3>
+			<p><strong>O(V + E)</strong></p>
+			<p>V = numCourses, E = prerequisites. Cada no e cada aresta sao visitados exatamente uma vez no DFS.</p>
+		</div>
+		<div class="complexity-card">
+			<h3>💾 Complexidade de Espaco</h3>
+			<p><strong>O(V²)</strong> &mdash; matriz adjacencia</p>
+			<p>A implementacao usa matriz bool[V,V]. Usando lista de adjacencia seria O(V+E). Pilha DFS: O(V) no pior caso.</p>
+		</div>
+	</div>
+
+	<!-- Code -->
+	<div class="code-section">
+		<h3>💻 Implementacao em C#</h3>
+		<pre>
+<span style="color:#569cd6;">public int</span>[] <span style="color:#dcdcaa;">CanFinish</span>(<span style="color:#569cd6;">int</span> numCourses, <span style="color:#569cd6;">int</span>[][] prerequisites)
+{
+    <span style="color:#569cd6;">var</span> adj = <span style="color:#c586c0;">new bool</span>[numCourses, numCourses];
+    BuildGraph(adj, prerequisites);              <span style="color:#6a9955;">// adj[b,a] = true para [a,b]</span>
+
+    <span style="color:#569cd6;">var</span> visited = <span style="color:#c586c0;">new int</span>[numCourses];           <span style="color:#6a9955;">// 0=nao visitado 1=em visita 2=concluido</span>
+    <span style="color:#569cd6;">var</span> result = <span style="color:#c586c0;">new</span> List&lt;<span style="color:#569cd6;">int</span>&gt;();
+    <span style="color:#c586c0;">for</span> (<span style="color:#569cd6;">int</span> i = <span style="color:#b5cea8;">0</span>; i &lt; numCourses; i++)
+        <span style="color:#c586c0;">if</span> (visited[i] == <span style="color:#b5cea8;">0</span> &amp;&amp; !DFS(adj, visited, i, numCourses, result))
+            <span style="color:#c586c0;">return new int</span>[] { };               <span style="color:#6a9955;">// ciclo!</span>
+
+    result.Reverse();
+    <span style="color:#c586c0;">return</span> result.ToArray();
+}
+
+<span style="color:#569cd6;">private bool</span> <span style="color:#dcdcaa;">DFS</span>(<span style="color:#569cd6;">bool</span>[,] adj, <span style="color:#569cd6;">int</span>[] visited, <span style="color:#569cd6;">int</span> i, <span style="color:#569cd6;">int</span> n, IList&lt;<span style="color:#569cd6;">int</span>&gt; result)
+{
+    visited[i] = <span style="color:#b5cea8;">1</span>;
+    <span style="color:#c586c0;">for</span> (<span style="color:#569cd6;">int</span> j = <span style="color:#b5cea8;">0</span>; j &lt; n; j++)
+    {
+        <span style="color:#c586c0;">if</span> (adj[i, j])
+        {
+            <span style="color:#c586c0;">if</span> (visited[j] == <span style="color:#b5cea8;">1</span>) <span style="color:#c586c0;">return false</span>; <span style="color:#6a9955;">// ciclo detectado</span>
+            <span style="color:#c586c0;">if</span> (visited[j] == <span style="color:#b5cea8;">0</span>)
+                <span style="color:#c586c0;">if</span> (!DFS(adj, visited, j, n, result)) <span style="color:#c586c0;">return false</span>;
+        }
+    }
+    visited[i] = <span style="color:#b5cea8;">2</span>;
+    result.Add(i);                               <span style="color:#6a9955;">// pos-ordem</span>
+    <span style="color:#c586c0;">return true</span>;
+}</pre>
+	</div>
+</div>
+<script>
+// ─── Problem data ───
+// numCourses = 4, prerequisites = [[1,0],[2,0],[3,1],[3,2]]
+// adj[b][a] = true for each [a,b]  →  0→1, 0→2, 1→3, 2→3
+const NUM_COURSES = 4;
+const PREREQS = [[1,0],[2,0],[3,1],[3,2]];
+
+// Build adj
+const adj = Array.from({length:4}, () => new Array(4).fill(false));
+PREREQS.forEach(([a,b]) => { adj[b][a] = true; });
+// adj[0][1]=T, adj[0][2]=T, adj[1][3]=T, adj[2][3]=T
+
+// Node positions for canvas (640x280)
+const NODE_POS = [
+	{x: 120, y: 140, label: '0'},
+	{x: 310, y:  60, label: '1'},
+	{x: 310, y: 220, label: '2'},
+	{x: 520, y: 140, label: '3'},
+];
+
+// ─── Pre-compute steps ───
+function buildSteps() {
+	const steps = [];
+	const visited = new Array(4).fill(0);
+	const result = [];
+
+	steps.push({
+		phase: 'init', node: -1, stack: [], result: [...result], visited: [...visited],
+		event: 'Inicializacao: grafo construido com 4 nos. visited = [0,0,0,0]. Iniciando loop externo.'
+	});
+
+	function dfs(node, callStack) {
+		callStack = [...callStack, node];
+		visited[node] = 1;
+		steps.push({
+			phase: 'enter', node, stack: [...callStack], result: [...result], visited: [...visited],
+			event: `DFS(${node}): visited[${node}] = 1 (em visita). Verificar vizinhos de no ${node}.`
+		});
+
+		for (let j = 0; j < NUM_COURSES; j++) {
+			if (adj[node][j]) {
+				if (visited[j] === 1) {
+					steps.push({
+						phase: 'cycle', node, stack: [...callStack], result: [...result], visited: [...visited],
+						event: `CICLO DETECTADO: ${node} → ${j}, mas ${j} ja esta em visita! Retorna false.`
+					});
+					return false;
+				}
+				if (visited[j] === 0) {
+					steps.push({
+						phase: 'visit_edge', node, stack: [...callStack], result: [...result], visited: [...visited],
+						neighbor: j,
+						event: `No ${node} tem aresta para ${j}. visited[${j}]=0 → chamar DFS(${j}).`
+					});
+					if (!dfs(j, callStack)) return false;
+				}
+			}
+		}
+
+		visited[node] = 2;
+		result.push(node);
+		const poppedStack = callStack.slice(0,-1);
+		steps.push({
+			phase: 'done_node', node, stack: [...poppedStack], result: [...result], visited: [...visited],
+			event: `DFS(${node}) concluido: visited[${node}] = 2. Adicionar ${node} ao resultado (pos-ordem). result = [${result.join(', ')}].`
+		});
+		return true;
+	}
+
+	for (let i = 0; i < NUM_COURSES; i++) {
+		if (visited[i] === 0) {
+			steps.push({
+				phase: 'outer_loop', node: i, stack: [], result: [...result], visited: [...visited],
+				event: `Loop externo: visited[${i}] == 0 → chamar DFS(${i}).`
+			});
+			dfs(i, []);
+		}
+	}
+
+	const reversed = [...result].reverse();
+	steps.push({
+		phase: 'reverse', node: -1, stack: [], result: [...result], visited: [...visited],
+		finalResult: reversed,
+		event: `Reverter resultado: [${result.join(', ')}] → [${reversed.join(', ')}]. Ordem topologica = [${reversed.join(', ')}].`
+	});
+	steps.push({
+		phase: 'done', node: -1, stack: [], result: reversed, visited: [...visited],
+		finalResult: reversed,
+		event: `✅ Concluido! Ordem para completar os 4 cursos: [${reversed.join(', ')}].`
+	});
+	return steps;
+}
+
+const STEPS = buildSteps();
+let stepIdx = 0, isRunning = false, intervalId = null;
+
+// ─── Colors ───
+const NODE_COLORS = {
+	0: { fill: '#f9fafb', stroke: '#9ca3af', text: '#374151' },
+	1: { fill: '#fef3c7', stroke: '#f59e0b', text: '#92400e' },
+	2: { fill: '#d1fae5', stroke: '#10b981', text: '#065f46' },
+};
+const NODE_DONE_COLOR = { fill: '#d1fae5', stroke: '#10b981', text: '#065f46' };
+
+function drawGraph(s) {
+	const canvas = document.getElementById('graphCanvas');
+	const ctx = canvas.getContext('2d');
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+	// Draw edges
+	for (let i = 0; i < NUM_COURSES; i++) {
+		for (let j = 0; j < NUM_COURSES; j++) {
+			if (!adj[i][j]) continue;
+			const from = NODE_POS[i], to = NODE_POS[j];
+
+			// Arrow
+			const dx = to.x - from.x, dy = to.y - from.y;
+			const len = Math.sqrt(dx*dx + dy*dy);
+			const ux = dx/len, uy = dy/len;
+			const R = 30;
+			const sx = from.x + ux*R, sy = from.y + uy*R;
+			const ex = to.x - ux*R,   ey = to.y - uy*R;
+
+			// Highlight active edge
+			const isActive = s.phase === 'visit_edge' && s.node === i && s.neighbor === j;
+			ctx.strokeStyle = isActive ? '#f59e0b' : '#94a3b8';
+			ctx.lineWidth   = isActive ? 3 : 1.5;
+
+			ctx.beginPath();
+			ctx.moveTo(sx, sy);
+			ctx.lineTo(ex, ey);
+			ctx.stroke();
+
+			// Arrowhead
+			const angle = Math.atan2(ey - sy, ex - sx);
+			const aLen = 10;
+			ctx.beginPath();
+			ctx.moveTo(ex, ey);
+			ctx.lineTo(ex - aLen*Math.cos(angle - Math.PI/6), ey - aLen*Math.sin(angle - Math.PI/6));
+			ctx.lineTo(ex - aLen*Math.cos(angle + Math.PI/6), ey - aLen*Math.sin(angle + Math.PI/6));
+			ctx.closePath();
+			ctx.fillStyle = isActive ? '#f59e0b' : '#94a3b8';
+			ctx.fill();
+		}
+	}
+
+	// Draw nodes
+	NODE_POS.forEach((pos, i) => {
+		const v = s.visited[i];
+		const isActive = s.node === i;
+		const c = isActive && v === 1 ? NODE_COLORS[1]
+		        : v === 2             ? NODE_COLORS[2]
+		        : v === 1             ? NODE_COLORS[1]
+		        :                       NODE_COLORS[0];
+
+		ctx.beginPath();
+		ctx.arc(pos.x, pos.y, 30, 0, Math.PI*2);
+		ctx.fillStyle = c.fill;
+		ctx.fill();
+		ctx.strokeStyle = c.stroke;
+		ctx.lineWidth = isActive ? 4 : 2.5;
+		ctx.stroke();
+
+		ctx.fillStyle = c.text;
+		ctx.font = 'bold 20px Segoe UI';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(pos.label, pos.x, pos.y);
+
+		// Edge label
+		ctx.font = '12px Segoe UI';
+		ctx.fillStyle = '#6b7280';
+		ctx.fillText(`Curso ${i}`, pos.x, pos.y + 46);
+	});
+}
+
+function setActiveStep(n) {
+	for (let i = 1; i <= 6; i++) document.getElementById(`step${i}`).classList.remove('active');
+	if (n > 0) document.getElementById(`step${n}`).classList.add('active');
+}
+
+function renderStack(s) {
+	const el = document.getElementById('dfsStack');
+	el.innerHTML = '';
+	s.stack.forEach((n, i) => {
+		const span = document.createElement('span');
+		span.className = 'stack-item';
+		span.style.background = i === s.stack.length-1 ? '#fef3c7' : '#f0f9ff';
+		span.style.borderColor = i === s.stack.length-1 ? '#f59e0b' : '#bae6fd';
+		span.style.color       = i === s.stack.length-1 ? '#92400e' : '#0c4a6e';
+		span.textContent = `DFS(${n})`;
+		el.appendChild(span);
+	});
+	if (s.stack.length === 0) { el.innerHTML = '<span style="color:#9ca3af;font-size:13px;">Vazia</span>'; }
+}
+
+function renderResult(s) {
+	const el = document.getElementById('resultList');
+	el.innerHTML = '';
+	s.result.forEach(n => {
+		const div = document.createElement('div');
+		div.className = 'result-item';
+		div.style.background = '#d1fae5'; div.style.borderColor = '#10b981'; div.style.color = '#065f46';
+		div.textContent = n;
+		el.appendChild(div);
+	});
+	if (s.result.length === 0) { el.innerHTML = '<span style="color:#9ca3af;font-size:13px;">Vazio</span>'; }
+}
+
+function renderStep(s) {
+	drawGraph(s);
+	renderStack(s);
+	renderResult(s);
+
+	document.getElementById('statCurrent').textContent = s.node >= 0 ? `Curso ${s.node}` : '—';
+	document.getElementById('statDepth').textContent   = s.stack.length;
+	document.getElementById('statResult').textContent  = '[' + s.result.join(', ') + ']';
+	document.getElementById('statFinal').textContent   = s.finalResult ? '[' + s.finalResult.join(', ') + ']' : '—';
+	document.getElementById('eventLog').textContent    = s.event;
+
+	const phaseMap = {
+		init: 1, outer_loop: 2, enter: 3, visit_edge: 4,
+		done_node: 5, reverse: 6, done: 6, cycle: 2
+	};
+	setActiveStep(phaseMap[s.phase] || 0);
+}
+
+function advance() {
+	if (stepIdx >= STEPS.length - 1) {
+		renderStep(STEPS[STEPS.length - 1]);
+		clearInterval(intervalId); isRunning = false;
+		document.getElementById('startBtn').disabled = false;
+		document.getElementById('pauseBtn').disabled = true;
+		return;
+	}
+	stepIdx++;
+	renderStep(STEPS[stepIdx]);
+}
+
+function startVisualization() {
+	if (stepIdx >= STEPS.length - 1) resetVisualization();
+	isRunning = true;
+	document.getElementById('startBtn').disabled = true;
+	document.getElementById('pauseBtn').disabled = false;
+	const speed = parseInt(document.getElementById('speedRange').value);
+	intervalId = setInterval(advance, speed);
+}
+function pauseVisualization() {
+	isRunning = false; clearInterval(intervalId);
+	document.getElementById('startBtn').disabled = false;
+	document.getElementById('pauseBtn').disabled = true;
+}
+function doStep() {
+	if (stepIdx >= STEPS.length - 1) { resetVisualization(); return; }
+	if (isRunning) pauseVisualization();
+	advance();
+}
+function resetVisualization() {
+	clearInterval(intervalId); isRunning = false; stepIdx = 0;
+	document.getElementById('startBtn').disabled = false;
+	document.getElementById('pauseBtn').disabled = true;
+	renderStep(STEPS[0]);
+}
+document.getElementById('speedRange').addEventListener('input', function () {
+	document.getElementById('speedValue').textContent = this.value + 'ms';
+	if (isRunning) { clearInterval(intervalId); intervalId = setInterval(advance, parseInt(this.value)); }
+});
+window.onload = function () { renderStep(STEPS[0]); };
+</script>
+</body>
+</html>

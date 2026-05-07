@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Visualizacao: 0269 - Alien Dictionary</title>
+	<style>
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #f43f5e 0%, #8b5cf6 100%);
+			padding: 20px; min-height: 100vh;
+		}
+		.container {
+			max-width: 1100px; margin: 0 auto; background: white;
+			border-radius: 20px; padding: 30px;
+			box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+		}
+		h1 { color: #f43f5e; text-align: center; margin-bottom: 8px; font-size: 2.1em; }
+		.subtitle { text-align: center; color: #666; margin-bottom: 26px; font-size: 1.05em; }
+
+		.explanation {
+			background: #fff1f2; padding: 20px; border-radius: 10px;
+			margin-bottom: 26px; border-left: 5px solid #f43f5e;
+		}
+		.explanation h2 { color: #f43f5e; margin-bottom: 12px; }
+		.explanation p  { line-height: 1.8; color: #333; margin-bottom: 8px; }
+		.explanation code {
+			background: #ffe4e6; padding: 2px 6px; border-radius: 3px;
+			font-family: 'Courier New', monospace; color: #9f1239;
+		}
+
+		.controls {
+			display: flex; gap: 12px; margin-bottom: 26px;
+			flex-wrap: wrap; justify-content: center; align-items: center;
+		}
+		button {
+			background: #f43f5e; color: white; border: none;
+			padding: 11px 20px; border-radius: 8px; cursor: pointer;
+			font-size: 15px; font-weight: 600; transition: all 0.25s;
+			box-shadow: 0 4px 12px rgba(244,63,94,0.4);
+		}
+		button:hover { background: #e11d48; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(244,63,94,0.55); }
+		button:disabled { background: #d1d5db; cursor: not-allowed; transform: none; box-shadow: none; }
+		button#stepBtn { background: #8b5cf6; box-shadow: 0 4px 12px rgba(139,92,246,0.4); }
+		button#stepBtn:hover { background: #7c3aed; }
+		button#stepBtn:disabled { background: #d1d5db; box-shadow: none; }
+		.speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+		input[type="range"] { width: 130px; }
+
+		/* ─── Visualization ─── */
+		.visualization {
+			background: #fafafa; padding: 22px 20px 18px;
+			border-radius: 12px; margin-bottom: 22px; border: 2px solid #fecdd3;
+		}
+		.visualization h3 { text-align: center; color: #f43f5e; margin-bottom: 16px; }
+
+		.legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
+		.legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+		.legend-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; border: 2px solid transparent; }
+
+		/* ─── Two-phase panels ─── */
+		.phase-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+		.phase-box {
+			background: white; border-radius: 10px; border: 2px solid #e5e7eb;
+			padding: 14px;
+		}
+		.phase-box h4 { font-size: 13px; color: #f43f5e; margin-bottom: 10px; text-align: center; }
+
+		/* Word comparison display */
+		.word-compare {
+			display: flex; flex-direction: column; gap: 10px;
+		}
+		.word-row {
+			display: flex; gap: 4px; align-items: center;
+		}
+		.word-label { font-size: 12px; color: #6b7280; width: 50px; flex-shrink: 0; }
+		.char-cell {
+			width: 32px; height: 32px; border-radius: 6px; border: 2px solid #e5e7eb;
+			display: flex; align-items: center; justify-content: center;
+			font-weight: 700; font-size: 15px; transition: all 0.2s;
+		}
+		.char-cell.match    { background: #f0fdf4; border-color: #86efac; color: #166534; }
+		.char-cell.mismatch { background: #fff1f2; border-color: #f43f5e; color: #9f1239; font-size: 17px; }
+		.char-cell.idle     { background: #f9fafb; color: #374151; }
+		.char-cell.fade     { background: #f9fafb; color: #d1d5db; }
+		.diff-arrow { font-size: 18px; color: #f43f5e; font-weight: 700; margin: 0 8px; }
+
+		/* Graph canvas */
+		#graphCanvas {
+			display: block; margin: 0 auto;
+			border-radius: 8px; background: white;
+			border: 1px solid #e2e8f0;
+		}
+
+		/* DFS panels */
+		.dfs-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
+		.panel { background: white; border-radius: 8px; border: 2px solid #e2e8f0; padding: 14px; }
+		.panel h4 { color: #f43f5e; font-size: 13px; margin-bottom: 10px; text-align: center; }
+		.stack-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 32px; align-items: center; }
+		.stack-item {
+			padding: 4px 10px; border-radius: 20px; font-weight: 700;
+			font-size: 14px; border: 2px solid;
+		}
+		.result-box {
+			font-size: 22px; font-weight: 700; font-family: 'Courier New', monospace;
+			color: #f43f5e; letter-spacing: 4px; text-align: center; min-height: 32px;
+			padding: 4px;
+		}
+
+		.event-log {
+			padding: 12px 16px; background: #fff1f2;
+			border-radius: 8px; border-left: 4px solid #f43f5e;
+			font-size: 14px; color: #9f1239; min-height: 44px; line-height: 1.55;
+			margin-top: 12px;
+		}
+
+		/* ─── Stats ─── */
+		.stats {
+			display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+			gap: 14px; margin-bottom: 22px;
+		}
+		.stat-card {
+			background: linear-gradient(135deg, #f43f5e 0%, #8b5cf6 100%);
+			color: white; padding: 16px; border-radius: 12px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		}
+		.stat-label { font-size: 12px; opacity: 0.85; margin-bottom: 5px; line-height: 1.3; }
+		.stat-value { font-size: 20px; font-weight: bold; font-family: 'Courier New', monospace; word-break: break-all; }
+
+		/* ─── Algorithm steps ─── */
+		.algorithm-steps { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 22px; }
+		.algorithm-steps h3 { color: #f43f5e; margin-bottom: 14px; }
+		.step {
+			padding: 11px 15px; margin-bottom: 8px; border-radius: 8px;
+			background: white; border-left: 4px solid #e5e7eb;
+			transition: all 0.3s; font-size: 14px; line-height: 1.55;
+		}
+		.step.active { border-left-color: #f43f5e; background: #fff1f2; transform: translateX(5px); }
+		.step-number {
+			display: inline-block; width: 26px; height: 26px; background: #f43f5e;
+			color: white; border-radius: 50%; text-align: center; line-height: 26px;
+			margin-right: 10px; font-weight: bold; font-size: 13px;
+		}
+
+		/* ─── Complexity ─── */
+		.complexity-info { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+		.complexity-card { background: #fff1f2; padding: 18px; border-radius: 10px; border-left: 5px solid #f43f5e; }
+		.complexity-card h3 { color: #f43f5e; margin-bottom: 8px; }
+		.complexity-card p  { line-height: 1.7; color: #374151; }
+
+		/* ─── Code ─── */
+		.code-section { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px; overflow-x: auto; }
+		.code-section h3 { color: #d4d4d4; margin-bottom: 14px; }
+		.code-section pre { font-family: 'Courier New', monospace; line-height: 1.75; font-size: 13px; }
+
+		@media (max-width: 700px) {
+			h1 { font-size: 1.5em; }
+			.complexity-info, .phase-grid, .dfs-panels { grid-template-columns: 1fr; }
+			#graphCanvas { width: 100% !important; height: auto !important; }
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+
+	<h1>👽 Alien Dictionary</h1>
+	<p class="subtitle">Topological Sort (DFS) &mdash; LeetCode Problema 0269</p>
+
+	<div class="explanation">
+		<h2>📖 Qual e o Problema?</h2>
+		<p>
+			Dado um dicionario alien com palavras ordenadas segundo o alfabeto dessa lingua,
+			descubra a ordem das letras. Se houver contradicao, retorne <code>""</code>.
+		</p>
+		<p>
+			Este visualizador usa o teste <code>AlienOrderTest_1</code>:
+			<br>
+			<strong>words = ["wrt", "wrf", "er", "ett", "rftt"]</strong>
+			<br>
+			Resultado esperado: <strong>"wertf"</strong>
+		</p>
+		<p>
+			<strong>Fase 1:</strong> comparar palavras adjacentes para extrair arestas de ordenacao:
+			<code>t→f</code>, <code>w→e</code>, <code>r→t</code>, <code>e→r</code>.
+			<br>
+			<strong>Fase 2:</strong> DFS topologico sobre as letras para descobrir a ordem:
+			<code>w → e → r → t → f</code>.
+		</p>
+	</div>
+
+	<div class="controls">
+		<button id="startBtn" onclick="startVisualization()">&#9654;&#65039; Iniciar</button>
+		<button id="pauseBtn" onclick="pauseVisualization()" disabled>&#9208;&#65039; Pausar</button>
+		<button id="stepBtn"  onclick="doStep()">&#9197;&#65039; Passo</button>
+		<button id="resetBtn" onclick="resetVisualization()">&#128260; Resetar</button>
+		<div class="speed-control">
+			<label for="speedRange">Velocidade:</label>
+			<input type="range" id="speedRange" min="300" max="2500" value="900" step="100">
+			<span id="speedValue">900ms</span>
+		</div>
+	</div>
+
+	<!-- Visualization -->
+	<div class="visualization">
+		<h3>Fase 1: Extrair arestas &nbsp;|&nbsp; Fase 2: DFS topologico</h3>
+
+		<div class="legend">
+			<div class="legend-item"><div class="legend-dot" style="background:#f9fafb;border-color:#9ca3af;"></div>Nao visitado</div>
+			<div class="legend-item"><div class="legend-dot" style="background:#fef3c7;border-color:#f59e0b;"></div>Em visita (DFS ativo)</div>
+			<div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#10b981;"></div>Concluido</div>
+			<div class="legend-item"><div class="legend-dot" style="background:#f0f9ff;border-color:#0ea5e9;"></div>Letra presente no input</div>
+		</div>
+
+		<div class="phase-grid">
+			<!-- Word comparison -->
+			<div class="phase-box">
+				<h4>📝 Comparacao de palavras (BuildGraph)</h4>
+				<div class="word-compare" id="wordCompare">
+					<div style="color:#9ca3af;font-size:13px;text-align:center;">Aguardando...</div>
+				</div>
+			</div>
+			<!-- Edges found -->
+			<div class="phase-box">
+				<h4>🔗 Arestas descobertas (ordem do alfabeto alien)</h4>
+				<div id="edgesList" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:50px;">
+					<span style="color:#9ca3af;font-size:13px;">Nenhuma ainda</span>
+				</div>
+			</div>
+		</div>
+
+		<!-- Graph -->
+		<canvas id="graphCanvas" width="640" height="240"></canvas>
+
+		<!-- DFS panels -->
+		<div class="dfs-panels">
+			<div class="panel">
+				<h4>📥 Pilha DFS</h4>
+				<div class="stack-list" id="dfsStack"></div>
+			</div>
+			<div class="panel">
+				<h4>📤 Resultado (pos-ordem &rarr; inserido na frente)</h4>
+				<div class="result-box" id="resultBox">—</div>
+			</div>
+		</div>
+
+		<div class="event-log" id="eventLog">
+			Clique em "Iniciar" ou "Passo" para comecar a visualizacao&hellip;
+		</div>
+	</div>
+
+	<!-- Stats -->
+	<div class="stats">
+		<div class="stat-card">
+			<div class="stat-label">Fase atual</div>
+			<div class="stat-value" id="statPhase">—</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Letra em DFS</div>
+			<div class="stat-value" id="statCurrent">—</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Arestas extraidas</div>
+			<div class="stat-value" id="statEdges">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Resultado final</div>
+			<div class="stat-value" id="statResult">—</div>
+		</div>
+	</div>
+
+	<!-- Algorithm steps -->
+	<div class="algorithm-steps">
+		<h3>🔍 Passos do Algoritmo</h3>
+		<div class="step" id="step1">
+			<span class="step-number">1</span>
+			<strong>Registrar letras:</strong> para cada palavra, marcar cada letra como "presente" (<code>visited[ch-'a'] = 0</code>)
+		</div>
+		<div class="step" id="step2">
+			<span class="step-number">2</span>
+			<strong>Extrair arestas:</strong> comparar palavras adjacentes. Primeira diferenca entre caracteres <code>prev[j] ≠ curr[j]</code> → aresta <code>prev[j] → curr[j]</code>
+		</div>
+		<div class="step" id="step3">
+			<span class="step-number">3</span>
+			<strong>Iniciar DFS:</strong> para cada letra presente e ainda nao visitada, chama DFS
+		</div>
+		<div class="step" id="step4">
+			<span class="step-number">4</span>
+			<strong>DFS - marcar em visita:</strong> <code>visited[i] = 1</code>. Explorar vizinhos
+		</div>
+		<div class="step" id="step5">
+			<span class="step-number">5</span>
+			<strong>DFS - concluir letra:</strong> <code>visited[i] = 2</code>. Inserir na frente do resultado (<code>sb.Insert(0, ch)</code>)
+		</div>
+		<div class="step" id="step6">
+			<span class="step-number">6</span>
+			<strong>Resultado:</strong> concatenacao das letras em ordem topologica
+		</div>
+	</div>
+
+	<!-- Complexity -->
+	<div class="complexity-info">
+		<div class="complexity-card">
+			<h3>⏱️ Complexidade de Tempo</h3>
+			<p><strong>O(C)</strong> onde C = total de caracteres</p>
+			<p>BuildGraph itera sobre todos os chars. O DFS roda em O(V+E) onde V ≤ 26 letras e E ≤ 26² arestas.</p>
+		</div>
+		<div class="complexity-card">
+			<h3>💾 Complexidade de Espaco</h3>
+			<p><strong>O(1)</strong> &mdash; tamanho fixo de 26</p>
+			<p>Tanto a matriz de adjacencia bool[26,26] quanto o array visited[26] tem tamanho constante, independente do input.</p>
+		</div>
+	</div>
+
+	<!-- Code -->
+	<div class="code-section">
+		<h3>💻 Implementacao em C#</h3>
+		<pre>
+<span style="color:#6a9955;">// Fase 1: BuildGraph</span>
+<span style="color:#c586c0;">for</span> (<span style="color:#569cd6;">int</span> i = <span style="color:#b5cea8;">1</span>; i &lt; words.Length; i++)
+{
+    <span style="color:#c586c0;">for</span> (<span style="color:#569cd6;">int</span> j = <span style="color:#b5cea8;">0</span>; j &lt; prevWord.Length; j++)
+    {
+        <span style="color:#c586c0;">if</span> (j &gt;= word.Length) <span style="color:#c586c0;">return false</span>;     <span style="color:#6a9955;">// "abc" > "ab" = invalido</span>
+        <span style="color:#c586c0;">if</span> (word[j] != prevWord[j])
+        {
+            adj[prevWord[j]-<span style="color:#ce9178;">'a'</span>, word[j]-<span style="color:#ce9178;">'a'</span>] = <span style="color:#569cd6;">true</span>;
+            <span style="color:#c586c0;">break</span>;                                <span style="color:#6a9955;">// so a 1a diferenca importa</span>
+        }
+    }
+}
+
+<span style="color:#6a9955;">// Fase 2: DFS topologico</span>
+<span style="color:#569cd6;">private bool</span> <span style="color:#dcdcaa;">DFS</span>(<span style="color:#569cd6;">bool</span>[,] adj, <span style="color:#569cd6;">int</span>[] visited, <span style="color:#569cd6;">int</span> index, StringBuilder sb)
+{
+    visited[index] = <span style="color:#b5cea8;">1</span>;
+    <span style="color:#c586c0;">for</span> (<span style="color:#569cd6;">int</span> j = <span style="color:#b5cea8;">0</span>; j &lt; <span style="color:#b5cea8;">26</span>; j++)
+        <span style="color:#c586c0;">if</span> (adj[index, j])
+        {
+            <span style="color:#c586c0;">if</span> (visited[j] == <span style="color:#b5cea8;">1</span>) <span style="color:#c586c0;">return false</span>;   <span style="color:#6a9955;">// ciclo</span>
+            <span style="color:#c586c0;">if</span> (visited[j] == <span style="color:#b5cea8;">0</span>)
+                <span style="color:#c586c0;">if</span> (!DFS(adj, visited, j, sb)) <span style="color:#c586c0;">return false</span>;
+        }
+    visited[index] = <span style="color:#b5cea8;">2</span>;
+    sb.Insert(<span style="color:#b5cea8;">0</span>, (<span style="color:#569cd6;">char</span>)(<span style="color:#ce9178;">'a'</span> + index));         <span style="color:#6a9955;">// inserir na frente</span>
+    <span style="color:#c586c0;">return true</span>;
+}</pre>
+	</div>
+</div>
+<script>
+// ─── Problem data ───
+// words = ["wrt","wrf","er","ett","rftt"]
+// Edges from BuildGraph:
+//   wrt vs wrf → t(19)→f(5)
+//   wrf vs er  → w(22)→e(4)
+//   er  vs ett → r(17)→t(19)
+//   ett vs rftt→ e(4)→r(17)
+// Letters present: w(22),r(17),t(19),e(4),f(5)
+// visited initial for others = int.MinValue (not present → skip)
+
+const WORDS = ["wrt","wrf","er","ett","rftt"];
+const LETTERS = ['e','f','r','t','w'];  // only letters present, sorted
+const LETTER_IDX = {e:4, f:5, r:17, t:19, w:22};
+const EDGES = [
+	{from:'t', to:'f', fromIdx:19, toIdx:5},
+	{from:'w', to:'e', fromIdx:22, toIdx:4},
+	{from:'r', to:'t', fromIdx:17, toIdx:19},
+	{from:'e', to:'r', fromIdx:4,  toIdx:17},
+];
+// Pair comparisons that yielded edges
+const WORD_PAIRS = [
+	{w1:'wrt', w2:'wrf', diffPos:2, c1:'t', c2:'f'},
+	{w1:'wrf', w2:'er',  diffPos:0, c1:'w', c2:'e'},
+	{w1:'er',  w2:'ett', diffPos:1, c1:'r', c2:'t'},
+	{w1:'ett', w2:'rftt',diffPos:0, c1:'e', c2:'r'},
+];
+
+// Node positions for canvas 640x240 — layout: w, e, r, t, f in a chain
+// w(22) → e(4) → r(17) → t(19) → f(5)  and t←r from above
+const NODE_INFO = {
+	w: {x:80,  y:120, label:'w'},
+	e: {x:200, y:120, label:'e'},
+	r: {x:330, y:120, label:'r'},
+	t: {x:460, y:120, label:'t'},
+	f: {x:580, y:120, label:'f'},
+};
+// extra visual: t also has arrow from r (already in chain)
+
+const ADJ = {};  // letter → Set of target letters
+LETTERS.forEach(l => ADJ[l] = new Set());
+EDGES.forEach(e => ADJ[e.from].add(e.to));
+
+// ─── Pre-compute steps ───
+function buildSteps() {
+	const steps = [];
+	const edgesFound = [];
+	const visited = {};  // letter → -1(not present) | 0 | 1 | 2
+	LETTERS.forEach(l => visited[l] = 0);
+
+	steps.push({
+		phase: 'init', node: null, stack: [],
+		result: '', edgesFound: [], visited: {...visited},
+		wordPairIdx: -1,
+		event: `Inicializacao: palavras = ["wrt","wrf","er","ett","rftt"]. Letras presentes: {w,r,t,e,f}. Iniciando BuildGraph.`
+	});
+
+	// Phase 1: extract edges
+	WORD_PAIRS.forEach((pair, pi) => {
+		edgesFound.push(`${pair.c1}→${pair.c2}`);
+		steps.push({
+			phase: 'extract_edge', node: null, stack: [],
+			result: '', edgesFound: [...edgesFound], visited: {...visited},
+			wordPairIdx: pi, pair,
+			event: `"${pair.w1}" vs "${pair.w2}": pos ${pair.diffPos} → '${pair.c1}' ≠ '${pair.c2}'. Aresta: ${pair.c1} → ${pair.c2}.`
+		});
+	});
+
+	steps.push({
+		phase: 'phase2_start', node: null, stack: [],
+		result: '', edgesFound: [...edgesFound], visited: {...visited},
+		wordPairIdx: -1,
+		event: `Fase 2: DFS topologico sobre letras {w,r,t,e,f}. visited = {w:0, r:0, t:0, e:0, f:0}.`
+	});
+
+	// Phase 2: DFS
+	let result = '';
+
+	function dfs(letter, callStack) {
+		callStack = [...callStack, letter];
+		visited[letter] = 1;
+		steps.push({
+			phase: 'dfs_enter', node: letter, stack: [...callStack],
+			result, edgesFound: [...edgesFound], visited: {...visited},
+			wordPairIdx: -1,
+			event: `DFS('${letter}'): visited['${letter}'] = 1. Explorar vizinhos de '${letter}'.`
+		});
+
+		for (const neighbor of ADJ[letter]) {
+			if (visited[neighbor] === 1) {
+				steps.push({
+					phase: 'cycle', node: letter, stack: [...callStack],
+					result, edgesFound: [...edgesFound], visited: {...visited},
+					wordPairIdx: -1,
+					event: `CICLO! '${letter}' → '${neighbor}', mas '${neighbor}' esta em visita. Retorna "".`
+				});
+				return false;
+			}
+			if (visited[neighbor] === 0) {
+				steps.push({
+					phase: 'dfs_edge', node: letter, stack: [...callStack],
+					result, edgesFound: [...edgesFound], visited: {...visited},
+					neighbor,
+					wordPairIdx: -1,
+					event: `'${letter}' tem aresta para '${neighbor}'. visited['${neighbor}']=0 → chamar DFS('${neighbor}').`
+				});
+				if (!dfs(neighbor, callStack)) return false;
+			}
+		}
+
+		visited[letter] = 2;
+		result = letter + result;  // insert at front
+		const poppedStack = callStack.slice(0,-1);
+		steps.push({
+			phase: 'dfs_done', node: letter, stack: [...poppedStack],
+			result, edgesFound: [...edgesFound], visited: {...visited},
+			wordPairIdx: -1,
+			event: `DFS('${letter}') concluido: visited['${letter}'] = 2. Inserir '${letter}' na frente → "${result}".`
+		});
+		return true;
+	}
+
+	// outer loop visits w first (index 22 is lowest that has visited=0 in the 0..25 scan)
+	// Order of outer loop: iterate 0..25, pick those with visited=0
+	// Letter indices: e=4,f=5,r=17,t=19,w=22
+	// But f has no outgoing edges and w→e→r→t→f. DFS from e would visit all.
+	// Let's replicate exactly: outer loop i=0..25, skip int.MinValue (not present), call DFS if visited==0
+	// Outer will first hit e(4), dfs(e) → dfs(r) → dfs(t) → dfs(f)→done(f), done(t), done(r), done(e)
+	// Then w(22): dfs(w)→e already done → done(w)
+	const outerOrder = ['e','r','t','f','w']; // letters in index order (4,5,17,19,22) but f=5 second
+	// Actually f=5 comes before r=17. Let's re-examine: letters by index: e(4),f(5),r(17),t(19),w(22)
+	// outer loop hits e(4) first → DFS(e) → adj[e] = {r} → DFS(r) → adj[r]={t} → DFS(t) → adj[t]={f} → DFS(f) → no adj → done(f)→result="f"
+	// done(t)→result="tf", done(r)→result="rtf", done(e)→result="ertf"
+	// next outer: f(5) visited=2, skip. r,t all visited=2. w(22) visited=0 → DFS(w)→adj[w]={e} visited=2→skip → done(w)→result="wertf"
+	// So outer loop order of DFS calls: e, then w.
+
+	for (const letter of ['e','f','r','t','w']) {  // i order 4,5,17,19,22
+		if (visited[letter] === 0) {
+			steps.push({
+				phase: 'outer_loop', node: letter, stack: [],
+				result, edgesFound: [...edgesFound], visited: {...visited},
+				wordPairIdx: -1,
+				event: `Loop externo: visited['${letter}'] == 0 → chamar DFS('${letter}').`
+			});
+			dfs(letter, []);
+		}
+	}
+
+	steps.push({
+		phase: 'done', node: null, stack: [],
+		result, edgesFound: [...edgesFound], visited: {...visited},
+		wordPairIdx: -1,
+		event: `✅ Concluido! Ordem do alfabeto alien: "${result}".`
+	});
+	return steps;
+}
+
+const STEPS = buildSteps();
+let stepIdx = 0, isRunning = false, intervalId = null;
+
+// ─── Drawing ───
+function drawGraph(s) {
+	const canvas = document.getElementById('graphCanvas');
+	const ctx = canvas.getContext('2d');
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+	const edgeSet = new Set(s.edgesFound.map(e => e.replace('→','-')));
+
+	// Draw edges
+	EDGES.forEach(e => {
+		const from = NODE_INFO[e.from], to = NODE_INFO[e.to];
+		const dx = to.x - from.x, dy = to.y - from.y;
+		const len = Math.sqrt(dx*dx + dy*dy);
+		const ux = dx/len, uy = dy/len;
+		const R = 26;
+		const sx = from.x + ux*R, sy = from.y + uy*R;
+		const ex = to.x - ux*R,   ey = to.y - uy*R;
+
+		const isPresent = edgeSet.has(`${e.from}-${e.to}`);
+		const isActive  = s.phase === 'dfs_edge' && s.node === e.from && s.neighbor === e.to;
+
+		if (!isPresent) return;
+
+		ctx.strokeStyle = isActive ? '#f43f5e' : '#94a3b8';
+		ctx.lineWidth   = isActive ? 3.5 : 1.8;
+		ctx.setLineDash([]);
+
+		ctx.beginPath();
+		ctx.moveTo(sx, sy);
+		ctx.lineTo(ex, ey);
+		ctx.stroke();
+
+		const angle = Math.atan2(ey - sy, ex - sx);
+		const aLen = 10;
+		ctx.beginPath();
+		ctx.moveTo(ex, ey);
+		ctx.lineTo(ex - aLen*Math.cos(angle - Math.PI/6), ey - aLen*Math.sin(angle - Math.PI/6));
+		ctx.lineTo(ex - aLen*Math.cos(angle + Math.PI/6), ey - aLen*Math.sin(angle + Math.PI/6));
+		ctx.closePath();
+		ctx.fillStyle = isActive ? '#f43f5e' : '#94a3b8';
+		ctx.fill();
+
+		// Edge label
+		const mx = (sx+ex)/2, my = (sy+ey)/2;
+		ctx.font = '11px Segoe UI';
+		ctx.fillStyle = isActive ? '#f43f5e' : '#6b7280';
+		ctx.textAlign = 'center';
+		ctx.fillText(`${e.from}→${e.to}`, mx, my - 12);
+	});
+
+	// Draw nodes
+	LETTERS.forEach(l => {
+		const pos = NODE_INFO[l];
+		const v = s.visited[l];
+		const isActive = s.node === l;
+
+		const fill   = v === 2 ? '#d1fae5' : v === 1 ? '#fef3c7' : '#f0f9ff';
+		const stroke = v === 2 ? '#10b981' : v === 1 ? '#f59e0b' : '#0ea5e9';
+		const text   = v === 2 ? '#065f46' : v === 1 ? '#92400e' : '#0c4a6e';
+
+		ctx.beginPath();
+		ctx.arc(pos.x, pos.y, 26, 0, Math.PI*2);
+		ctx.fillStyle = fill;
+		ctx.fill();
+		ctx.strokeStyle = stroke;
+		ctx.lineWidth = isActive ? 4 : 2.5;
+		ctx.stroke();
+
+		ctx.fillStyle = text;
+		ctx.font = 'bold 18px Segoe UI';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(l, pos.x, pos.y);
+
+		ctx.font = '11px Segoe UI';
+		ctx.fillStyle = '#6b7280';
+		ctx.fillText(`[${LETTER_IDX[l]}]`, pos.x, pos.y + 38);
+	});
+}
+
+function renderWordCompare(s) {
+	const el = document.getElementById('wordCompare');
+	if (s.phase !== 'extract_edge' || s.wordPairIdx < 0) {
+		el.innerHTML = '<div style="color:#9ca3af;font-size:13px;text-align:center;">Comparacao de palavras aqui...</div>';
+		if (s.phase === 'phase2_start' || s.phase === 'outer_loop' || s.phase.startsWith('dfs') || s.phase === 'done') {
+			el.innerHTML = '<div style="color:#10b981;font-size:13px;text-align:center;">✅ BuildGraph concluido. 4 arestas extraidas.</div>';
+		}
+		return;
+	}
+	const p = s.pair;
+	el.innerHTML = '';
+
+	['w1','w2'].forEach(wk => {
+		const word = p[wk];
+		const longer = Math.max(p.w1.length, p.w2.length);
+		const row = document.createElement('div');
+		row.className = 'word-row';
+		const lbl = document.createElement('span');
+		lbl.className = 'word-label';
+		lbl.textContent = `"${word}"`;
+		row.appendChild(lbl);
+		for (let i = 0; i < longer; i++) {
+			const cell = document.createElement('div');
+			cell.className = 'char-cell';
+			const ch = word[i] || '';
+			cell.textContent = ch;
+			if (i < p.diffPos) cell.classList.add('match');
+			else if (i === p.diffPos) cell.classList.add('mismatch');
+			else cell.classList.add(ch ? 'idle' : 'fade');
+			row.appendChild(cell);
+		}
+		if (wk === 'w1') {
+			const arrow = document.createElement('div');
+			arrow.innerHTML = `<span style="font-size:12px;color:#9ca3af;font-weight:bold;">pos ${p.diffPos}: '${p.c1}'≠'${p.c2}'</span>`;
+			arrow.style.marginTop = '4px';
+		}
+		el.appendChild(row);
+	});
+
+	const info = document.createElement('div');
+	info.style.cssText = 'margin-top:8px;font-size:12px;color:#f43f5e;font-weight:600;';
+	info.textContent = `→ Aresta: '${p.c1}' precede '${p.c2}' neste alfabeto`;
+	el.appendChild(info);
+}
+
+function renderEdges(s) {
+	const el = document.getElementById('edgesList');
+	if (s.edgesFound.length === 0) {
+		el.innerHTML = '<span style="color:#9ca3af;font-size:13px;">Nenhuma ainda</span>';
+		return;
+	}
+	el.innerHTML = '';
+	s.edgesFound.forEach(e => {
+		const span = document.createElement('span');
+		span.style.cssText = 'padding:5px 12px;background:#fff1f2;border:2px solid #f43f5e;border-radius:20px;font-weight:700;font-size:14px;color:#9f1239;';
+		span.textContent = e;
+		el.appendChild(span);
+	});
+}
+
+function renderStack(s) {
+	const el = document.getElementById('dfsStack');
+	el.innerHTML = '';
+	s.stack.forEach((l, i) => {
+		const span = document.createElement('span');
+		span.className = 'stack-item';
+		const isTop = i === s.stack.length - 1;
+		span.style.background   = isTop ? '#fef3c7' : '#fff1f2';
+		span.style.borderColor  = isTop ? '#f59e0b' : '#fecdd3';
+		span.style.color        = isTop ? '#92400e' : '#9f1239';
+		span.textContent = `DFS('${l}')`;
+		el.appendChild(span);
+	});
+	if (s.stack.length === 0) el.innerHTML = '<span style="color:#9ca3af;font-size:13px;">Vazia</span>';
+}
+
+function setActiveStep(n) {
+	for (let i = 1; i <= 6; i++) document.getElementById(`step${i}`).classList.remove('active');
+	if (n > 0) document.getElementById(`step${n}`).classList.add('active');
+}
+
+function renderStep(s) {
+	drawGraph(s);
+	renderWordCompare(s);
+	renderEdges(s);
+	renderStack(s);
+
+	document.getElementById('resultBox').textContent = s.result || '—';
+	document.getElementById('statEdges').textContent  = s.edgesFound.length;
+	document.getElementById('statCurrent').textContent = s.node ? `'${s.node}'` : '—';
+	document.getElementById('statResult').textContent  = s.result ? `"${s.result}"` : '—';
+	document.getElementById('eventLog').textContent    = s.event;
+
+	const isPhase1 = ['init','extract_edge','phase2_start'].includes(s.phase);
+	const isPhase2 = s.phase.startsWith('dfs') || s.phase === 'outer_loop' || s.phase === 'done' || s.phase === 'cycle';
+	document.getElementById('statPhase').textContent = s.phase === 'done' ? 'Concluido' : isPhase1 ? 'Fase 1' : 'Fase 2';
+
+	const phaseMap = {
+		init:1, extract_edge:2, phase2_start:3,
+		outer_loop:3, dfs_enter:4, dfs_edge:4,
+		dfs_done:5, done:6, cycle:4
+	};
+	setActiveStep(phaseMap[s.phase] || 0);
+}
+
+function advance() {
+	if (stepIdx >= STEPS.length - 1) {
+		renderStep(STEPS[STEPS.length-1]);
+		clearInterval(intervalId); isRunning = false;
+		document.getElementById('startBtn').disabled = false;
+		document.getElementById('pauseBtn').disabled = true;
+		return;
+	}
+	stepIdx++;
+	renderStep(STEPS[stepIdx]);
+}
+
+function startVisualization() {
+	if (stepIdx >= STEPS.length - 1) resetVisualization();
+	isRunning = true;
+	document.getElementById('startBtn').disabled = true;
+	document.getElementById('pauseBtn').disabled = false;
+	const speed = parseInt(document.getElementById('speedRange').value);
+	intervalId = setInterval(advance, speed);
+}
+function pauseVisualization() {
+	isRunning = false; clearInterval(intervalId);
+	document.getElementById('startBtn').disabled = false;
+	document.getElementById('pauseBtn').disabled = true;
+}
+function doStep() {
+	if (stepIdx >= STEPS.length - 1) { resetVisualization(); return; }
+	if (isRunning) pauseVisualization();
+	advance();
+}
+function resetVisualization() {
+	clearInterval(intervalId); isRunning = false; stepIdx = 0;
+	document.getElementById('startBtn').disabled = false;
+	document.getElementById('pauseBtn').disabled = true;
+	renderStep(STEPS[0]);
+}
+document.getElementById('speedRange').addEventListener('input', function () {
+	document.getElementById('speedValue').textContent = this.value + 'ms';
+	if (isRunning) { clearInterval(intervalId); intervalId = setInterval(advance, parseInt(this.value)); }
+});
+window.onload = function () { renderStep(STEPS[0]); };
+</script>
+</body>
+</html>

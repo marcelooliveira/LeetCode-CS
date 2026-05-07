@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Visualizacao: 0167 - Two Sum II</title>
+	<style>
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #f59e0b 0%, #10b981 100%);
+			padding: 20px; min-height: 100vh;
+		}
+		.container {
+			max-width: 1000px; margin: 0 auto; background: white;
+			border-radius: 20px; padding: 30px;
+			box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+		}
+		h1 { color: #f59e0b; text-align: center; margin-bottom: 8px; font-size: 2.1em; }
+		.subtitle { text-align: center; color: #666; margin-bottom: 26px; font-size: 1.05em; }
+
+		.explanation {
+			background: #fffbeb; padding: 20px; border-radius: 10px;
+			margin-bottom: 26px; border-left: 5px solid #f59e0b;
+		}
+		.explanation h2 { color: #f59e0b; margin-bottom: 12px; }
+		.explanation p  { line-height: 1.8; color: #333; margin-bottom: 8px; }
+		.explanation code {
+			background: #fef3c7; padding: 2px 6px; border-radius: 3px;
+			font-family: 'Courier New', monospace; color: #92400e;
+		}
+
+		.controls {
+			display: flex; gap: 12px; margin-bottom: 26px;
+			flex-wrap: wrap; justify-content: center; align-items: center;
+		}
+		button {
+			background: #f59e0b; color: white; border: none;
+			padding: 11px 20px; border-radius: 8px; cursor: pointer;
+			font-size: 15px; font-weight: 600; transition: all 0.25s;
+			box-shadow: 0 4px 12px rgba(245,158,11,0.4);
+		}
+		button:hover { background: #d97706; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(245,158,11,0.55); }
+		button:disabled { background: #d1d5db; cursor: not-allowed; transform: none; box-shadow: none; }
+		button#stepBtn { background: #10b981; box-shadow: 0 4px 12px rgba(16,185,129,0.4); }
+		button#stepBtn:hover { background: #059669; }
+		button#stepBtn:disabled { background: #d1d5db; box-shadow: none; }
+		.speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+		input[type="range"] { width: 130px; }
+
+		/* ─── Visualization ─── */
+		.visualization {
+			background: #fafafa; padding: 22px 20px 18px;
+			border-radius: 12px; margin-bottom: 22px; border: 2px solid #fde68a;
+		}
+		.visualization h3 { text-align: center; color: #f59e0b; margin-bottom: 14px; }
+
+		.legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+		.legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+		.legend-box  { width: 18px; height: 18px; border-radius: 4px; border: 2px solid transparent; flex-shrink: 0; }
+
+		/* ─── Array display ─── */
+		.array-wrapper { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+		.ptr-row-top {
+			display: flex; gap: 8px; justify-content: center;
+		}
+
+		.ptr-lbl-top {
+			width: 80px; height: 22px; font-size: 11px; font-weight: 700;
+			text-align: center; line-height: 22px; border-radius: 5px;
+			transition: all 0.2s; opacity: 0;
+		}
+		.ptr-lbl-top.left-ptr  { background: #fef3c7; color: #92400e; opacity: 1; }
+		.ptr-lbl-top.right-ptr { background: #d1fae5; color: #064e3b; opacity: 1; }
+		.ptr-lbl-top.both-ptr  { background: #e5e7eb; color: #374151; opacity: 1; font-size: 10px; }
+
+		.array-row { display: flex; gap: 8px; justify-content: center; }
+
+		.elem-box {
+			width: 80px; height: 70px;
+			display: flex; flex-direction: column;
+			align-items: center; justify-content: center;
+			border: 2px solid #e5e7eb; border-radius: 10px;
+			font-weight: 700; font-size: 22px;
+			transition: all 0.25s; background: white; gap: 3px;
+		}
+		.elem-box .val { line-height: 1; }
+		.elem-box .idx { font-size: 10px; font-weight: normal; color: #9ca3af; }
+
+		/* States */
+		.elem-box.default   { background: #f9fafb; border-color: #e5e7eb; color: #9ca3af; }
+		.elem-box.left-ptr  { background: #fef3c7; border-color: #f59e0b; color: #78350f;
+		                       transform: scale(1.1); box-shadow: 0 4px 14px rgba(245,158,11,0.5); z-index:5; position:relative; }
+		.elem-box.right-ptr { background: #d1fae5; border-color: #10b981; color: #064e3b;
+		                       transform: scale(1.1); box-shadow: 0 4px 14px rgba(16,185,129,0.5); z-index:5; position:relative; }
+		.elem-box.found     { background: #d1fae5; border-color: #10b981; color: #064e3b; }
+		.elem-box.not-found { background: #f3f4f6; border-color: #d1d5db; color: #9ca3af; }
+
+		/* ─── Sum meter ─── */
+		.sum-meter {
+			margin-top: 18px; padding: 16px;
+			background: white; border-radius: 10px; border: 1px solid #fde68a;
+		}
+		.sum-meter-title { font-size: 14px; color: #374151; margin-bottom: 10px; font-weight: 600; }
+		.sum-display {
+			display: flex; align-items: center; justify-content: center;
+			gap: 16px; font-size: 20px; font-weight: 700;
+		}
+		.sum-left  { color: #f59e0b; font-family: 'Courier New', monospace; }
+		.sum-right { color: #10b981; font-family: 'Courier New', monospace; }
+		.sum-op    { color: #374151; }
+		.sum-total { font-size: 28px; font-family: 'Courier New', monospace; transition: color 0.3s; }
+		.sum-total.less    { color: #f59e0b; }
+		.sum-total.greater { color: #ef4444; }
+		.sum-total.equal   { color: #10b981; }
+		.sum-vs { font-size: 14px; color: #6b7280; }
+		.sum-target { font-size: 22px; color: #6b7280; font-family: 'Courier New', monospace; }
+
+		/* Decision arrow */
+		.decision-box {
+			margin-top: 12px; text-align: center;
+			padding: 10px; border-radius: 8px;
+			font-size: 14px; font-weight: 600;
+			transition: all 0.3s;
+		}
+		.decision-box.less    { background: #fef3c7; color: #92400e; }
+		.decision-box.greater { background: #fee2e2; color: #7f1d1d; }
+		.decision-box.equal   { background: #d1fae5; color: #064e3b; }
+		.decision-box.neutral { background: #f3f4f6; color: #374151; }
+
+		.event-log {
+			margin-top: 12px; padding: 12px 16px; background: #fffbeb;
+			border-radius: 8px; border-left: 4px solid #f59e0b;
+			font-size: 14px; color: #78350f; min-height: 44px; line-height: 1.55;
+		}
+
+		/* ─── Stats ─── */
+		.stats {
+			display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+			gap: 14px; margin-bottom: 22px;
+		}
+		.stat-card {
+			background: linear-gradient(135deg, #f59e0b 0%, #10b981 100%);
+			color: white; padding: 16px; border-radius: 12px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		}
+		.stat-label { font-size: 12px; opacity: 0.85; margin-bottom: 5px; line-height: 1.3; }
+		.stat-value { font-size: 26px; font-weight: bold; font-family: 'Courier New', monospace; }
+
+		/* ─── Algorithm steps ─── */
+		.algorithm-steps { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 22px; }
+		.algorithm-steps h3 { color: #f59e0b; margin-bottom: 14px; }
+		.step {
+			padding: 11px 15px; margin-bottom: 8px; border-radius: 8px;
+			background: white; border-left: 4px solid #e5e7eb;
+			transition: all 0.3s; font-size: 14px; line-height: 1.55;
+		}
+		.step.active { border-left-color: #f59e0b; background: #fffbeb; transform: translateX(5px); }
+		.step-number {
+			display: inline-block; width: 26px; height: 26px; background: #f59e0b;
+			color: white; border-radius: 50%; text-align: center; line-height: 26px;
+			margin-right: 10px; font-weight: bold; font-size: 13px;
+		}
+
+		/* ─── Complexity ─── */
+		.complexity-info { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+		.complexity-card { background: #fffbeb; padding: 18px; border-radius: 10px; border-left: 5px solid #f59e0b; }
+		.complexity-card h3 { color: #f59e0b; margin-bottom: 8px; }
+		.complexity-card p  { line-height: 1.7; color: #374151; }
+
+		/* ─── Code ─── */
+		.code-section { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px; overflow-x: auto; }
+		.code-section h3 { color: #d4d4d4; margin-bottom: 14px; }
+		.code-section pre { font-family: 'Courier New', monospace; line-height: 1.75; font-size: 14px; }
+
+		@media (max-width: 700px) {
+			h1 { font-size: 1.5em; }
+			.complexity-info { grid-template-columns: 1fr; }
+			.elem-box { width: 62px; height: 58px; font-size: 18px; }
+			.ptr-lbl-top { width: 62px; }
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+
+	<h1>➕ Two Sum II &mdash; Input Array Is Sorted</h1>
+	<p class="subtitle">Two Pointers &mdash; LeetCode Problema 0167</p>
+
+	<!-- Explanation -->
+	<div class="explanation">
+		<h2>📚 Qual e o Problema?</h2>
+		<p>
+			Dado um array <strong>ordenado</strong> <code>numbers</code> e um inteiro <code>target</code>,
+			retorne os indices (1-based) dos dois numeros que somam exatamente <code>target</code>.
+			Garantido que existe exatamente uma solucao.
+		</p>
+		<p>
+			Este visualizador usa o teste <code>TwoSumTest_1</code>:
+			<br>
+			<strong>numbers = [2, 7, 11, 15]</strong>, <strong>target = 9</strong>
+			&nbsp;&rarr;&nbsp; <strong>Resultado esperado: [1, 2]</strong>
+			&nbsp;(2 + 7 = 9)
+		</p>
+		<p>
+			A solucao usa <strong>Two Pointers</strong>: <em>i</em> começa no menor elemento (esquerda)
+			e <em>j</em> no maior (direita). Se a soma for igual ao target, achou!
+			Se for maior, recua <em>j</em>. Se for menor, avanca <em>i</em>.
+			Isso funciona porque o array esta ordenado.
+		</p>
+	</div>
+
+	<!-- Controls -->
+	<div class="controls">
+		<button id="startBtn" onclick="startVisualization()">&#9654;&#65039; Iniciar</button>
+		<button id="pauseBtn" onclick="pauseVisualization()" disabled>&#9208;&#65039; Pausar</button>
+		<button id="stepBtn"  onclick="doStep()">&#9197;&#65039; Passo</button>
+		<button id="resetBtn" onclick="resetVisualization()">&#128260; Resetar</button>
+		<div class="speed-control">
+			<label for="speedRange">Velocidade:</label>
+			<input type="range" id="speedRange" min="300" max="2000" value="900" step="100">
+			<span id="speedValue">900ms</span>
+		</div>
+	</div>
+
+	<!-- Visualization -->
+	<div class="visualization">
+		<h3>numbers = [2, 7, 11, 15] &nbsp;|&nbsp; target = <strong style="color:#7c3aed;">9</strong></h3>
+		<div class="legend">
+			<div class="legend-item"><div class="legend-box" style="background:#fef3c7;border-color:#f59e0b;"></div>Ponteiro esquerdo (i)</div>
+			<div class="legend-item"><div class="legend-box" style="background:#d1fae5;border-color:#10b981;"></div>Ponteiro direito (j)</div>
+			<div class="legend-item"><div class="legend-box" style="background:#d1fae5;border-color:#10b981;"></div>Par encontrado!</div>
+		</div>
+
+		<div class="array-wrapper">
+			<div class="ptr-row-top" id="ptrRowTop"></div>
+			<div class="array-row"   id="arrayRow"></div>
+		</div>
+
+		<!-- Sum meter -->
+		<div class="sum-meter">
+			<div class="sum-meter-title">Soma dos ponteiros vs target</div>
+			<div class="sum-display">
+				<span class="sum-left"  id="sumLeft">—</span>
+				<span class="sum-op">+</span>
+				<span class="sum-right" id="sumRight">—</span>
+				<span class="sum-op">=</span>
+				<span class="sum-total neutral" id="sumTotal">—</span>
+				<span class="sum-vs">vs</span>
+				<span class="sum-target">9</span>
+			</div>
+			<div class="decision-box neutral" id="decisionBox">Aguardando...</div>
+		</div>
+
+		<div class="event-log" id="eventLog">
+			Clique em &ldquo;Iniciar&rdquo; ou &ldquo;Passo&rdquo; para comecar a visualizacao&hellip;
+		</div>
+	</div>
+
+	<!-- Stats -->
+	<div class="stats">
+		<div class="stat-card">
+			<div class="stat-label">Ponteiro i (esquerda)</div>
+			<div class="stat-value" id="statI">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Ponteiro j (direita)</div>
+			<div class="stat-value" id="statJ">3</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">numbers[i] + numbers[j]</div>
+			<div class="stat-value" id="statSum">—</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Resultado (1-based)</div>
+			<div class="stat-value" id="statResult">—</div>
+		</div>
+	</div>
+
+	<!-- Algorithm steps -->
+	<div class="algorithm-steps">
+		<h3>🔍 Passos do Algoritmo</h3>
+		<div class="step" id="step1">
+			<span class="step-number">1</span>
+			<strong>Inicializacao:</strong> <code>i = 0</code> (menor elemento), <code>j = n - 1</code> (maior elemento)
+		</div>
+		<div class="step" id="step2">
+			<span class="step-number">2</span>
+			<strong>Calcular soma:</strong> <code>compare = (numbers[i] + numbers[j]).CompareTo(target)</code>
+		</div>
+		<div class="step" id="step3">
+			<span class="step-number">3</span>
+			<strong>&#9989; Encontrado!</strong> <code>compare == 0</code>
+			&rarr; retorna <code>{ i+1, j+1 }</code> (indices 1-based)
+		</div>
+		<div class="step" id="step4">
+			<span class="step-number">4</span>
+			<strong>Soma muito grande:</strong> <code>compare &gt; 0</code>
+			&rarr; <code>j--</code> (reduce o maior valor)
+		</div>
+		<div class="step" id="step5">
+			<span class="step-number">5</span>
+			<strong>Soma muito pequena:</strong> <code>compare &lt; 0</code>
+			&rarr; <code>i++</code> (aumenta o menor valor)
+		</div>
+		<div class="step" id="step6">
+			<span class="step-number">6</span>
+			<strong>Sem solucao:</strong> <code>i &ge; j</code> &rarr; retorna <code>[]</code> (array vazio)
+		</div>
+	</div>
+
+	<!-- Complexity -->
+	<div class="complexity-info">
+		<div class="complexity-card">
+			<h3>&#9201;&#65039; Complexidade de Tempo</h3>
+			<p><strong>O(n)</strong> &mdash; Linear</p>
+			<p>Cada elemento e visitado no maximo uma vez: i so avanca, j so recua. O array ordenado garante que a convergencia dos ponteiros sempre encontra a solucao.</p>
+		</div>
+		<div class="complexity-card">
+			<h3>&#128190; Complexidade de Espaco</h3>
+			<p><strong>O(1)</strong> &mdash; Constante</p>
+			<p>Apenas dois ponteiros: <code>i</code> e <code>j</code>. Sem estruturas de dados auxiliares (diferente da abordagem com HashMap do Two Sum I).</p>
+		</div>
+	</div>
+
+	<!-- Code -->
+	<div class="code-section">
+		<h3>&#128187; Implementacao em C#</h3>
+		<pre>
+<span style="color:#569cd6;">public int</span>[] <span style="color:#dcdcaa;">TwoSum</span>(<span style="color:#569cd6;">int</span>[] numbers, <span style="color:#569cd6;">int</span> target)
+{
+    <span style="color:#569cd6;">int</span> i = <span style="color:#b5cea8;">0</span>, j = numbers.Length - <span style="color:#b5cea8;">1</span>;
+
+    <span style="color:#c586c0;">while</span> (i &lt; j)
+    {
+        <span style="color:#569cd6;">int</span> compare = (numbers[i] + numbers[j]).CompareTo(target);
+
+        <span style="color:#c586c0;">if</span>      (compare == <span style="color:#b5cea8;">0</span>) <span style="color:#c586c0;">return new int</span>[] { i + <span style="color:#b5cea8;">1</span>, j + <span style="color:#b5cea8;">1</span> }; <span style="color:#6a9955;">// ✅ achou!</span>
+        <span style="color:#c586c0;">else if</span> (compare &gt;  <span style="color:#b5cea8;">0</span>) j--;   <span style="color:#6a9955;">// soma muito grande → recua direita</span>
+        <span style="color:#c586c0;">else if</span> (compare &lt;  <span style="color:#b5cea8;">0</span>) i++;   <span style="color:#6a9955;">// soma muito pequena → avanca esquerda</span>
+    }
+
+    <span style="color:#c586c0;">return new int</span>[] { };           <span style="color:#6a9955;">// sem solucao</span>
+}</pre>
+	</div>
+
+</div>
+<script>
+const NUMBERS = [2, 7, 11, 15];
+const TARGET  = 9;
+
+// Pre-compute steps
+function buildSteps() {
+	const steps = [];
+	let i = 0, j = NUMBERS.length - 1;
+
+	steps.push({
+		phase: 'init', i, j, sum: null, compare: null,
+		event: `Inicializacao: i = 0 (numbers[0]=${NUMBERS[0]}), j = ${j} (numbers[${j}]=${NUMBERS[j]}). Target = ${TARGET}.`
+	});
+
+	while (i < j) {
+		const sum     = NUMBERS[i] + NUMBERS[j];
+		const compare = sum === TARGET ? 0 : sum > TARGET ? 1 : -1;
+
+		steps.push({ phase: 'calc', i, j, sum, compare,
+			event: `Calcular: numbers[${i}]=${NUMBERS[i]} + numbers[${j}]=${NUMBERS[j]} = ${sum}.` +
+			       (compare === 0 ? ` ${sum} == ${TARGET}. PAR ENCONTRADO!`
+			       : compare > 0  ? ` ${sum} > ${TARGET}. Soma grande demais.`
+			                       : ` ${sum} < ${TARGET}. Soma pequena demais.`) });
+
+		if (compare === 0) {
+			steps.push({ phase: 'found', i, j, sum, compare,
+				event: `✅ Encontrado! numbers[${i}]=${NUMBERS[i]} + numbers[${j}]=${NUMBERS[j]} = ${TARGET}. Retorna [${i+1}, ${j+1}] (indices 1-based).` });
+			return steps;
+		} else if (compare > 0) {
+			const oldJ = j; j--;
+			steps.push({ phase: 'moveRight', i, j, sum, compare,
+				event: `Soma ${sum} > ${TARGET}: reduzir pelo lado direito. j: ${oldJ} → ${j} (numbers[${j}]=${NUMBERS[j]}).` });
+		} else {
+			const oldI = i; i++;
+			steps.push({ phase: 'moveLeft', i, j, sum, compare,
+				event: `Soma ${sum} < ${TARGET}: aumentar pelo lado esquerdo. i: ${oldI} → ${i} (numbers[${i}]=${NUMBERS[i]}).` });
+		}
+	}
+
+	steps.push({ phase: 'noSolution', i, j, sum: null, compare: null,
+		event: `i (${i}) >= j (${j}): ponteiros se cruzaram sem encontrar par. Retorna [].` });
+	return steps;
+}
+
+const STEPS = buildSteps();
+let stepIdx = 0, isRunning = false, intervalId = null;
+
+function buildDOM() {
+	const ptr = document.getElementById('ptrRowTop');
+	const row = document.getElementById('arrayRow');
+	ptr.innerHTML = ''; row.innerHTML = '';
+	NUMBERS.forEach((v, idx) => {
+		const lbl = document.createElement('div');
+		lbl.className = 'ptr-lbl-top'; lbl.id = `ptl-${idx}`;
+		ptr.appendChild(lbl);
+
+		const box = document.createElement('div');
+		box.className = 'elem-box default'; box.id = `el-${idx}`;
+		box.innerHTML = `<span class="val">${v}</span><span class="idx">[${idx+1}]</span>`;
+		row.appendChild(box);
+	});
+}
+
+function setActiveStep(n) {
+	for (let k = 1; k <= 6; k++) document.getElementById(`step${k}`).classList.remove('active');
+	if (n > 0) document.getElementById(`step${n}`).classList.add('active');
+}
+
+function renderStep(s) {
+	NUMBERS.forEach((_, idx) => {
+		const box = document.getElementById(`el-${idx}`);
+		const lbl = document.getElementById(`ptl-${idx}`);
+		box.className = 'elem-box'; lbl.className = 'ptr-lbl-top'; lbl.textContent = '';
+
+		if (s.phase === 'found') {
+			if (idx === s.i || idx === s.j) box.classList.add('found');
+			else box.classList.add('not-found');
+			if (idx === s.i) { lbl.classList.add('left-ptr'); lbl.textContent = `i → [${s.i+1}]`; }
+			if (idx === s.j) { lbl.classList.add('right-ptr'); lbl.textContent = `j → [${s.j+1}]`; }
+			return;
+		}
+
+		if (s.phase === 'noSolution') { box.classList.add('not-found'); return; }
+
+		if (idx === s.i && idx === s.j) {
+			box.classList.add('left-ptr');
+			lbl.classList.add('both-ptr'); lbl.textContent = 'i = j';
+		} else if (idx === s.i) {
+			box.classList.add('left-ptr');
+			lbl.classList.add('left-ptr'); lbl.textContent = 'i';
+		} else if (idx === s.j) {
+			box.classList.add('right-ptr');
+			lbl.classList.add('right-ptr'); lbl.textContent = 'j';
+		} else {
+			box.classList.add('default');
+		}
+	});
+
+	// Sum meter
+	const sumL = document.getElementById('sumLeft');
+	const sumR = document.getElementById('sumRight');
+	const sumT = document.getElementById('sumTotal');
+	const dec  = document.getElementById('decisionBox');
+
+	if (s.sum !== null) {
+		sumL.textContent = NUMBERS[s.i < NUMBERS.length ? s.i : s.i-1];
+		sumR.textContent = NUMBERS[s.j >= 0 ? s.j : s.j+1];
+		sumT.textContent = s.sum;
+		sumT.className   = 'sum-total ' + (s.compare === 0 ? 'equal' : s.compare > 0 ? 'greater' : 'less');
+
+		if (s.compare === 0) {
+			dec.className = 'decision-box equal';
+			dec.textContent = `✅ ${s.sum} == ${TARGET} → Encontrado! Retornar [${s.i+1}, ${s.j+1}]`;
+		} else if (s.compare > 0) {
+			dec.className = 'decision-box greater';
+			dec.textContent = `⬇ ${s.sum} > ${TARGET} → j-- (reduzir soma, mover direita para esquerda)`;
+		} else {
+			dec.className = 'decision-box less';
+			dec.textContent = `⬆ ${s.sum} < ${TARGET} → i++ (aumentar soma, mover esquerda para direita)`;
+		}
+	} else {
+		sumL.textContent = '—'; sumR.textContent = '—'; sumT.textContent = '—';
+		sumT.className = 'sum-total';
+		dec.className  = 'decision-box neutral';
+		dec.textContent = s.phase === 'init' ? 'Pronto para comecar...' : 'Sem solucao encontrada.';
+	}
+
+	// Stats
+	document.getElementById('statI').textContent      = s.i;
+	document.getElementById('statJ').textContent      = s.j;
+	document.getElementById('statSum').textContent    = s.sum !== null ? s.sum : '—';
+	document.getElementById('statResult').textContent = s.phase === 'found' ? `[${s.i+1}, ${s.j+1}]` : '—';
+	document.getElementById('eventLog').textContent   = s.event;
+
+	const phaseMap = { init:1, calc:2, found:3, moveRight:4, moveLeft:5, noSolution:6 };
+	setActiveStep(phaseMap[s.phase] || 0);
+}
+
+function advance() {
+	if (stepIdx >= STEPS.length - 1) {
+		renderStep(STEPS[STEPS.length - 1]);
+		clearInterval(intervalId); isRunning = false;
+		document.getElementById('startBtn').disabled = false;
+		document.getElementById('pauseBtn').disabled = true;
+		return;
+	}
+	stepIdx++;
+	renderStep(STEPS[stepIdx]);
+}
+
+function startVisualization() {
+	if (stepIdx >= STEPS.length - 1) resetVisualization();
+	isRunning = true;
+	document.getElementById('startBtn').disabled = true;
+	document.getElementById('pauseBtn').disabled = false;
+	const speed = parseInt(document.getElementById('speedRange').value);
+	intervalId = setInterval(advance, speed);
+}
+function pauseVisualization() {
+	isRunning = false; clearInterval(intervalId);
+	document.getElementById('startBtn').disabled = false;
+	document.getElementById('pauseBtn').disabled = true;
+}
+function doStep() {
+	if (stepIdx >= STEPS.length - 1) { resetVisualization(); return; }
+	if (isRunning) pauseVisualization();
+	advance();
+}
+function resetVisualization() {
+	clearInterval(intervalId); isRunning = false; stepIdx = 0;
+	document.getElementById('startBtn').disabled = false;
+	document.getElementById('pauseBtn').disabled = true;
+	buildDOM(); renderStep(STEPS[0]);
+}
+document.getElementById('speedRange').addEventListener('input', function () {
+	document.getElementById('speedValue').textContent = this.value + 'ms';
+	if (isRunning) { clearInterval(intervalId); intervalId = setInterval(advance, parseInt(this.value)); }
+});
+window.onload = function () { buildDOM(); renderStep(STEPS[0]); };
+</script>
+</body>
+</html>

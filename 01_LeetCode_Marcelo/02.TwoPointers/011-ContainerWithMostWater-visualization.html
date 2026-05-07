@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Visualizacao: 011 - Container With Most Water</title>
+	<style>
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+			padding: 20px; min-height: 100vh;
+		}
+		.container {
+			max-width: 1100px; margin: 0 auto; background: white;
+			border-radius: 20px; padding: 30px;
+			box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+		}
+		h1 { color: #06b6d4; text-align: center; margin-bottom: 8px; font-size: 2.1em; }
+		.subtitle { text-align: center; color: #666; margin-bottom: 26px; font-size: 1.05em; }
+
+		.explanation {
+			background: #ecfeff; padding: 20px; border-radius: 10px;
+			margin-bottom: 26px; border-left: 5px solid #06b6d4;
+		}
+		.explanation h2 { color: #06b6d4; margin-bottom: 12px; }
+		.explanation p  { line-height: 1.8; color: #333; margin-bottom: 8px; }
+		.explanation code {
+			background: #cffafe; padding: 2px 6px; border-radius: 3px;
+			font-family: 'Courier New', monospace; color: #0e7490;
+		}
+
+		.controls {
+			display: flex; gap: 12px; margin-bottom: 26px;
+			flex-wrap: wrap; justify-content: center; align-items: center;
+		}
+		button {
+			background: #06b6d4; color: white; border: none;
+			padding: 11px 20px; border-radius: 8px; cursor: pointer;
+			font-size: 15px; font-weight: 600; transition: all 0.25s;
+			box-shadow: 0 4px 12px rgba(6,182,212,0.4);
+		}
+		button:hover { background: #0891b2; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(6,182,212,0.55); }
+		button:disabled { background: #d1d5db; cursor: not-allowed; transform: none; box-shadow: none; }
+		button#stepBtn { background: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+		button#stepBtn:hover { background: #2563eb; }
+		button#stepBtn:disabled { background: #d1d5db; box-shadow: none; }
+		.speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+		input[type="range"] { width: 130px; }
+
+		/* ─── Visualization ─── */
+		.visualization {
+			background: #fafafa; padding: 22px 20px 18px;
+			border-radius: 12px; margin-bottom: 22px; border: 2px solid #a5f3fc;
+		}
+		.visualization h3 { text-align: center; color: #06b6d4; margin-bottom: 16px; }
+
+		.legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+		.legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+		.legend-box { width: 18px; height: 18px; border-radius: 4px; border: 2px solid transparent; flex-shrink: 0; }
+
+		/* ─── Bar chart ─── */
+		.chart-area {
+			display: flex; align-items: flex-end; gap: 8px;
+			justify-content: center; padding: 10px 10px 0;
+			position: relative; min-height: 260px;
+		}
+
+		.bar-col {
+			display: flex; flex-direction: column; align-items: center;
+			gap: 4px; position: relative;
+		}
+
+		.bar-wrapper {
+			position: relative;
+			width: 64px;
+			display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+		}
+
+		.bar {
+			width: 100%; border-radius: 6px 6px 0 0;
+			display: flex; align-items: flex-start; justify-content: center;
+			padding-top: 6px;
+			font-weight: 700; font-size: 16px; color: white;
+			transition: all 0.3s; position: relative;
+		}
+
+		.bar.default  { background: #bae6fd; color: #0369a1; }
+		.bar.left-ptr { background: #06b6d4; }
+		.bar.right-ptr{ background: #3b82f6; }
+		.bar.both-ptr { background: linear-gradient(180deg, #06b6d4 0%, #3b82f6 100%); }
+		.bar.best     { background: #22c55e; color: #14532d; }
+		.bar.water-area{
+			outline: 3px dashed #f97316; outline-offset: 2px;
+		}
+		.bar.done-best { background: #22c55e; }
+
+		/* water fill overlay */
+		.water-fill {
+			position: absolute; bottom: 0; left: 0; right: 0;
+			background: rgba(6,182,212,0.25);
+			border: 2px dashed #06b6d4;
+			border-radius: 4px 4px 0 0;
+			transition: height 0.3s;
+			pointer-events: none;
+		}
+
+		.ptr-label {
+			font-size: 11px; font-weight: 700;
+			height: 20px; line-height: 20px;
+			text-align: center; width: 64px;
+			border-radius: 4px;
+			transition: all 0.25s;
+		}
+		.ptr-label.left-ptr  { background: #cffafe; color: #0e7490; }
+		.ptr-label.right-ptr { background: #dbeafe; color: #1d4ed8; }
+		.ptr-label.both-ptr  { background: #e0e7ff; color: #4338ca; font-size: 10px; }
+		.ptr-label.hidden    { opacity: 0; }
+
+		.bar-idx {
+			font-size: 11px; color: #9ca3af; margin-top: 3px; font-weight: normal;
+		}
+
+		/* ─── Water info ─── */
+		.water-info {
+			text-align: center; margin-top: 16px; padding: 12px;
+			background: white; border-radius: 8px; border: 1px solid #a5f3fc;
+			font-size: 14px; color: #374151;
+		}
+		.water-formula {
+			font-family: 'Courier New', monospace; font-size: 17px;
+			font-weight: bold; color: #06b6d4; margin-top: 6px;
+		}
+
+		.event-log {
+			margin-top: 12px; padding: 12px 16px; background: #ecfeff;
+			border-radius: 8px; border-left: 4px solid #06b6d4;
+			font-size: 14px; color: #164e63; min-height: 44px; line-height: 1.55;
+		}
+
+		/* ─── Stats ─── */
+		.stats {
+			display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+			gap: 14px; margin-bottom: 22px;
+		}
+		.stat-card {
+			background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+			color: white; padding: 16px; border-radius: 12px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		}
+		.stat-label { font-size: 12px; opacity: 0.85; margin-bottom: 5px; line-height: 1.3; }
+		.stat-value { font-size: 26px; font-weight: bold; font-family: 'Courier New', monospace; }
+
+		/* ─── Algorithm steps ─── */
+		.algorithm-steps { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 22px; }
+		.algorithm-steps h3 { color: #06b6d4; margin-bottom: 14px; }
+		.step {
+			padding: 11px 15px; margin-bottom: 8px; border-radius: 8px;
+			background: white; border-left: 4px solid #e5e7eb;
+			transition: all 0.3s; font-size: 14px; line-height: 1.55;
+		}
+		.step.active { border-left-color: #06b6d4; background: #ecfeff; transform: translateX(5px); }
+		.step-number {
+			display: inline-block; width: 26px; height: 26px; background: #06b6d4;
+			color: white; border-radius: 50%; text-align: center; line-height: 26px;
+			margin-right: 10px; font-weight: bold; font-size: 13px;
+		}
+
+		/* ─── Complexity ─── */
+		.complexity-info { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+		.complexity-card { background: #ecfeff; padding: 18px; border-radius: 10px; border-left: 5px solid #06b6d4; }
+		.complexity-card h3 { color: #06b6d4; margin-bottom: 8px; }
+		.complexity-card p  { line-height: 1.7; color: #374151; }
+
+		/* ─── Code ─── */
+		.code-section { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px; overflow-x: auto; }
+		.code-section h3 { color: #d4d4d4; margin-bottom: 14px; }
+		.code-section pre { font-family: 'Courier New', monospace; line-height: 1.75; font-size: 14px; }
+
+		@media (max-width: 700px) {
+			h1 { font-size: 1.5em; }
+			.complexity-info { grid-template-columns: 1fr; }
+			.bar-wrapper { width: 46px; }
+			.ptr-label   { width: 46px; }
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+
+	<h1>🫙 Container With Most Water</h1>
+	<p class="subtitle">Two Pointers &mdash; LeetCode Problema 011</p>
+
+	<!-- Explanation -->
+	<div class="explanation">
+		<h2>📚 Qual e o Problema?</h2>
+		<p>
+			Dado um array <code>height</code> onde cada elemento representa a altura de uma parede,
+			encontre as duas paredes que formam o <strong>container que armazena mais agua</strong>.
+			A largura do container e a distancia entre as duas paredes; a altura e limitada pela
+			parede mais curta.
+		</p>
+		<p>
+			Este visualizador usa o teste <code>MaxAreaTest_General_2</code>:
+			<br>
+			<strong>height = [1, 2, 3, 4, 5, 6, 7, 8, 9]</strong>
+			&nbsp;&rarr;&nbsp; <strong>Resultado esperado: 20</strong>
+			&nbsp;(paredes de altura 4 e 9, largura 5)
+		</p>
+		<p>
+			A solucao usa <strong>Two Pointers</strong>: <em>left</em> começa na extremidade esquerda
+			e <em>right</em> na direita. A cada passo move-se o ponteiro da parede mais baixa para dentro,
+			pois mover a mais alta so poderia diminuir a area.
+		</p>
+	</div>
+
+	<!-- Controls -->
+	<div class="controls">
+		<button id="startBtn" onclick="startVisualization()">&#9654;&#65039; Iniciar</button>
+		<button id="pauseBtn" onclick="pauseVisualization()" disabled>&#9208;&#65039; Pausar</button>
+		<button id="stepBtn"  onclick="doStep()">&#9197;&#65039; Passo</button>
+		<button id="resetBtn" onclick="resetVisualization()">&#128260; Resetar</button>
+		<div class="speed-control">
+			<label for="speedRange">Velocidade:</label>
+			<input type="range" id="speedRange" min="200" max="2000" value="900" step="100">
+			<span id="speedValue">900ms</span>
+		</div>
+	</div>
+
+	<!-- Visualization -->
+	<div class="visualization">
+		<h3>height = [1, 2, 3, 4, 5, 6, 7, 8, 9]</h3>
+		<div class="legend">
+			<div class="legend-item"><div class="legend-box" style="background:#06b6d4;"></div>Ponteiro esquerdo (left)</div>
+			<div class="legend-item"><div class="legend-box" style="background:#3b82f6;"></div>Ponteiro direito (right)</div>
+			<div class="legend-item"><div class="legend-box" style="background:rgba(6,182,212,0.25);border-color:#06b6d4;border-style:dashed;"></div>Area de agua calculada</div>
+			<div class="legend-item"><div class="legend-box" style="background:#22c55e;"></div>Melhor container encontrado</div>
+		</div>
+
+		<div class="chart-area" id="chartArea"></div>
+
+		<div class="water-info">
+			<div>
+				left = <strong id="infoLeft">—</strong>
+				&nbsp;|&nbsp; right = <strong id="infoRight">—</strong>
+				&nbsp;|&nbsp; min(h[L], h[R]) = <strong id="infoMinH">—</strong>
+				&nbsp;|&nbsp; largura = <strong id="infoWidth">—</strong>
+			</div>
+			<div class="water-formula" id="waterFormula">—</div>
+		</div>
+
+		<div class="event-log" id="eventLog">
+			Clique em &ldquo;Iniciar&rdquo; ou &ldquo;Passo&rdquo; para comecar a visualizacao&hellip;
+		</div>
+	</div>
+
+	<!-- Stats -->
+	<div class="stats">
+		<div class="stat-card">
+			<div class="stat-label">Ponteiro Esquerdo (left)</div>
+			<div class="stat-value" id="statLeft">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Ponteiro Direito (right)</div>
+			<div class="stat-value" id="statRight">8</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Area Atual</div>
+			<div class="stat-value" id="statArea">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Maior Area (result)</div>
+			<div class="stat-value" id="statResult">0</div>
+		</div>
+	</div>
+
+	<!-- Algorithm steps -->
+	<div class="algorithm-steps">
+		<h3>🔍 Passos do Algoritmo</h3>
+		<div class="step" id="step1">
+			<span class="step-number">1</span>
+			<strong>Inicializacao:</strong> <code>left = 0</code>, <code>right = n-1</code>, <code>result = 0</code>
+		</div>
+		<div class="step" id="step2">
+			<span class="step-number">2</span>
+			<strong>Calcular area:</strong> <code>area = min(h[left], h[right]) × (right - left)</code>
+			&nbsp;|&nbsp; <code>result = max(result, area)</code>
+		</div>
+		<div class="step" id="step3">
+			<span class="step-number">3</span>
+			<strong>Mover ponteiro esquerdo:</strong> <code>h[left] &le; h[right]</code>
+			&rarr; avanca <em>left</em> ate encontrar uma parede mais alta que a atual
+		</div>
+		<div class="step" id="step4">
+			<span class="step-number">4</span>
+			<strong>Mover ponteiro direito:</strong> <code>h[left] &gt; h[right]</code>
+			&rarr; recua <em>right</em> ate encontrar uma parede mais alta que a atual
+		</div>
+		<div class="step" id="step5">
+			<span class="step-number">5</span>
+			<strong>&#9989; Resultado:</strong> retornar <code>result</code> quando <code>left &ge; right</code>
+		</div>
+	</div>
+
+	<!-- Complexity -->
+	<div class="complexity-info">
+		<div class="complexity-card">
+			<h3>&#9201;&#65039; Complexidade de Tempo</h3>
+			<p><strong>O(n)</strong> &mdash; Linear</p>
+			<p>Cada elemento e visitado no maximo uma vez: left so avanca, right so recua.</p>
+		</div>
+		<div class="complexity-card">
+			<h3>&#128190; Complexidade de Espaco</h3>
+			<p><strong>O(1)</strong> &mdash; Constante</p>
+			<p>Apenas tres variaveis: <code>left</code>, <code>right</code> e <code>result</code>.</p>
+		</div>
+	</div>
+
+	<!-- Code -->
+	<div class="code-section">
+		<h3>&#128187; Implementacao em C#</h3>
+		<pre>
+<span style="color:#569cd6;">public int</span> <span style="color:#dcdcaa;">MaxArea</span>(<span style="color:#569cd6;">int</span>[] height)
+{
+    <span style="color:#569cd6;">int</span> left = <span style="color:#b5cea8;">0</span>, right = height.Length - <span style="color:#b5cea8;">1</span>;
+    <span style="color:#569cd6;">int</span> result = <span style="color:#b5cea8;">0</span>;
+
+    <span style="color:#c586c0;">while</span> (left &lt; right)
+    {
+        <span style="color:#569cd6;">var</span> area = Math.<span style="color:#dcdcaa;">Min</span>(height[left], height[right]) * (right - left);
+        result = Math.<span style="color:#dcdcaa;">Max</span>(result, area);
+
+        <span style="color:#c586c0;">if</span> (height[left] &lt;= height[right])
+        {
+            <span style="color:#569cd6;">var</span> temp = height[left];
+            <span style="color:#c586c0;">do</span> left++;
+            <span style="color:#c586c0;">while</span> (left &lt; right &amp;&amp; height[left] &lt;= temp); <span style="color:#6a9955;">// skip walls that can't improve</span>
+        }
+        <span style="color:#c586c0;">else</span>
+        {
+            <span style="color:#569cd6;">var</span> temp = height[right];
+            <span style="color:#c586c0;">do</span> right--;
+            <span style="color:#c586c0;">while</span> (left &lt; right &amp;&amp; height[right] &lt;= temp);
+        }
+    }
+    <span style="color:#c586c0;">return</span> result;
+}</pre>
+	</div>
+
+</div>
+<script>
+const HEIGHT = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const MAX_H  = Math.max(...HEIGHT);
+const BAR_H  = 220; // px for max height
+
+// Pre-compute steps
+function buildSteps() {
+	const steps = [];
+	let left = 0, right = HEIGHT.length - 1, result = 0;
+	let bestLeft = 0, bestRight = HEIGHT.length - 1;
+
+	steps.push({ phase:'init', left, right, result, area:0, bestLeft, bestRight,
+		event: 'Inicializacao: left = 0, right = 8, result = 0.' });
+
+	while (left < right) {
+		const minH  = Math.min(HEIGHT[left], HEIGHT[right]);
+		const width = right - left;
+		const area  = minH * width;
+		const isNew = area > result;
+		result = Math.max(result, area);
+		if (isNew) { bestLeft = left; bestRight = right; }
+
+		steps.push({ phase:'calc', left, right, result, area, bestLeft, bestRight,
+			event: `Calcular: min(h[${left}]=${HEIGHT[left]}, h[${right}]=${HEIGHT[right]}) × ${width} = ${area}.` +
+			       (isNew ? ` Novo maximo! result = ${result}.` : ` result permanece ${result}.`) });
+
+		if (HEIGHT[left] <= HEIGHT[right]) {
+			const oldLeft = left;
+			const temp = HEIGHT[left];
+			do { left++; } while (left < right && HEIGHT[left] <= temp);
+			steps.push({ phase:'moveLeft', left, right, result, area, bestLeft, bestRight,
+				event: `Mover left: h[${oldLeft}]=${HEIGHT[oldLeft]} ≤ h[${right}]=${HEIGHT[right]}. left avanca de ${oldLeft} → ${left} (skip paredes ≤ ${temp}).` });
+		} else {
+			const oldRight = right;
+			const temp = HEIGHT[right];
+			do { right--; } while (left < right && HEIGHT[right] <= temp);
+			steps.push({ phase:'moveRight', left, right, result, area, bestLeft, bestRight,
+				event: `Mover right: h[${left}]=${HEIGHT[left]} > h[${oldRight}]=${HEIGHT[oldRight]}. right recua de ${oldRight} → ${right} (skip paredes ≤ ${temp}).` });
+		}
+	}
+
+	steps.push({ phase:'done', left, right, result, area: result, bestLeft, bestRight,
+		event: `✅ Concluido! Maior area = ${result}. Container: paredes nos indices ${bestLeft} e ${bestRight} (h=${HEIGHT[bestLeft]} e h=${HEIGHT[bestRight]}, largura=${bestRight-bestLeft}).` });
+	return steps;
+}
+
+const STEPS = buildSteps();
+let stepIdx = 0, isRunning = false, intervalId = null;
+
+function px(h) { return Math.round((h / MAX_H) * BAR_H); }
+
+function buildDOM() {
+	const area = document.getElementById('chartArea');
+	area.innerHTML = '';
+	HEIGHT.forEach((h, i) => {
+		const col = document.createElement('div');
+		col.className = 'bar-col';
+
+		const lbl = document.createElement('div');
+		lbl.className = 'ptr-label hidden';
+		lbl.id = `lbl-${i}`;
+
+		const wrap = document.createElement('div');
+		wrap.className = 'bar-wrapper';
+		wrap.style.height = BAR_H + 'px';
+
+		const bar = document.createElement('div');
+		bar.className = 'bar default';
+		bar.id = `bar-${i}`;
+		bar.style.height = px(h) + 'px';
+		bar.textContent = h;
+
+		const wf = document.createElement('div');
+		wf.className = 'water-fill';
+		wf.id = `wf-${i}`;
+		wf.style.height = '0px';
+
+		wrap.appendChild(bar);
+		wrap.appendChild(wf);
+
+		const idx = document.createElement('div');
+		idx.className = 'bar-idx';
+		idx.textContent = `[${i}]`;
+
+		col.appendChild(lbl);
+		col.appendChild(wrap);
+		col.appendChild(idx);
+		area.appendChild(col);
+	});
+}
+
+function setActiveStep(n) {
+	for (let i = 1; i <= 5; i++) document.getElementById(`step${i}`).classList.remove('active');
+	if (n > 0) document.getElementById(`step${n}`).classList.add('active');
+}
+
+function renderStep(s) {
+	HEIGHT.forEach((h, i) => {
+		const bar = document.getElementById(`bar-${i}`);
+		const wf  = document.getElementById(`wf-${i}`);
+		const lbl = document.getElementById(`lbl-${i}`);
+
+		bar.className = 'bar';
+		wf.style.height = '0px';
+		lbl.className = 'ptr-label hidden';
+		lbl.textContent = '';
+
+		if (s.phase === 'done') {
+			if (i >= s.bestLeft && i <= s.bestRight) bar.classList.add('done-best');
+			else bar.classList.add('default');
+			return;
+		}
+
+		const isLeft  = (i === s.left);
+		const isRight = (i === s.right);
+
+		if (isLeft && isRight) {
+			bar.classList.add('both-ptr');
+			lbl.className = 'ptr-label both-ptr';
+			lbl.textContent = 'L / R';
+		} else if (isLeft) {
+			bar.classList.add('left-ptr');
+			lbl.className = 'ptr-label left-ptr';
+			lbl.textContent = 'left';
+		} else if (isRight) {
+			bar.classList.add('right-ptr');
+			lbl.className = 'ptr-label right-ptr';
+			lbl.textContent = 'right';
+		} else {
+			bar.classList.add('default');
+		}
+
+		// water fill between pointers for calc phase
+		if (s.phase === 'calc' && i >= s.left && i <= s.right) {
+			const minH = Math.min(HEIGHT[s.left], HEIGHT[s.right]);
+			const fillH = Math.min(px(minH), px(h));
+			wf.style.height = fillH + 'px';
+		}
+	});
+
+	// Water info
+	if (s.phase === 'init') {
+		document.getElementById('infoLeft').textContent  = s.left;
+		document.getElementById('infoRight').textContent = s.right;
+		document.getElementById('infoMinH').textContent  = '—';
+		document.getElementById('infoWidth').textContent = '—';
+		document.getElementById('waterFormula').textContent = 'Aguardando calculo...';
+	} else if (s.phase === 'done') {
+		const minH = Math.min(HEIGHT[s.bestLeft], HEIGHT[s.bestRight]);
+		const w    = s.bestRight - s.bestLeft;
+		document.getElementById('infoLeft').textContent  = s.bestLeft;
+		document.getElementById('infoRight').textContent = s.bestRight;
+		document.getElementById('infoMinH').textContent  = minH;
+		document.getElementById('infoWidth').textContent = w;
+		document.getElementById('waterFormula').textContent = `area = ${minH} × ${w} = ${s.result} ✅`;
+	} else {
+		const minH = Math.min(HEIGHT[s.left], HEIGHT[s.right]);
+		const w    = s.right - s.left;
+		document.getElementById('infoLeft').textContent  = s.left;
+		document.getElementById('infoRight').textContent = s.right;
+		document.getElementById('infoMinH').textContent  = minH;
+		document.getElementById('infoWidth').textContent = w;
+		document.getElementById('waterFormula').textContent = `area = ${minH} × ${w} = ${s.area}`;
+	}
+
+	document.getElementById('statLeft').textContent   = s.left;
+	document.getElementById('statRight').textContent  = s.right;
+	document.getElementById('statArea').textContent   = s.area;
+	document.getElementById('statResult').textContent = s.result;
+	document.getElementById('eventLog').textContent   = s.event;
+
+	const phaseMap = { init:1, calc:2, moveLeft:3, moveRight:4, done:5 };
+	setActiveStep(phaseMap[s.phase] || 0);
+}
+
+function advance() {
+	if (stepIdx >= STEPS.length - 1) {
+		renderStep(STEPS[STEPS.length - 1]);
+		clearInterval(intervalId); isRunning = false;
+		document.getElementById('startBtn').disabled = false;
+		document.getElementById('pauseBtn').disabled = true;
+		return;
+	}
+	stepIdx++;
+	renderStep(STEPS[stepIdx]);
+}
+
+function startVisualization() {
+	if (stepIdx >= STEPS.length - 1) resetVisualization();
+	isRunning = true;
+	document.getElementById('startBtn').disabled = true;
+	document.getElementById('pauseBtn').disabled = false;
+	const speed = parseInt(document.getElementById('speedRange').value);
+	intervalId = setInterval(advance, speed);
+}
+function pauseVisualization() {
+	isRunning = false; clearInterval(intervalId);
+	document.getElementById('startBtn').disabled = false;
+	document.getElementById('pauseBtn').disabled = true;
+}
+function doStep() {
+	if (stepIdx >= STEPS.length - 1) { resetVisualization(); return; }
+	if (isRunning) pauseVisualization();
+	advance();
+}
+function resetVisualization() {
+	clearInterval(intervalId); isRunning = false; stepIdx = 0;
+	document.getElementById('startBtn').disabled = false;
+	document.getElementById('pauseBtn').disabled = true;
+	buildDOM(); renderStep(STEPS[0]);
+}
+document.getElementById('speedRange').addEventListener('input', function () {
+	document.getElementById('speedValue').textContent = this.value + 'ms';
+	if (isRunning) { clearInterval(intervalId); intervalId = setInterval(advance, parseInt(this.value)); }
+});
+window.onload = function () { buildDOM(); renderStep(STEPS[0]); };
+</script>
+</body>
+</html>
