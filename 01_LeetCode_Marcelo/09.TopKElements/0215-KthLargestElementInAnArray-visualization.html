@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizacao: 0215 - Kth Largest Element in an Array</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
+      padding: 20px; min-height: 100vh;
+    }
+    .container {
+      max-width: 1050px; margin: 0 auto; background: white;
+      border-radius: 20px; padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 { color: #0ea5e9; text-align: center; margin-bottom: 8px; font-size: 1.95em; }
+    .subtitle { text-align: center; color: #666; margin-bottom: 24px; font-size: 1.05em; }
+    .explanation {
+      background: #f0f9ff; padding: 18px 22px; border-radius: 10px;
+      margin-bottom: 26px; border-left: 5px solid #0ea5e9;
+    }
+    .explanation h2 { color: #0ea5e9; margin-bottom: 10px; }
+    .explanation p { line-height: 1.8; color: #333; margin-bottom: 8px; }
+    .explanation code {
+      background: #e0f2fe; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; color: #0369a1;
+    }
+    .controls {
+      display: flex; gap: 12px; margin-bottom: 26px;
+      flex-wrap: wrap; justify-content: center; align-items: center;
+    }
+    button {
+      background: #0ea5e9; color: white; border: none;
+      padding: 11px 22px; border-radius: 8px; cursor: pointer;
+      font-size: 15px; font-weight: 600; transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(14,165,233,0.4);
+    }
+    button:hover { background: #0284c7; transform: translateY(-2px); }
+    button:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+    #stepBtn { background: #8b5cf6; box-shadow: 0 4px 15px rgba(139,92,246,0.4); }
+    #stepBtn:hover { background: #7c3aed; }
+    #stepBtn:disabled { background: #ccc; box-shadow: none; }
+    .speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+    input[type="range"] { width: 120px; }
+    .progress-bar {
+      width: 100%; height: 22px; background: #e9ecef;
+      border-radius: 11px; overflow: hidden; margin-bottom: 20px;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, #0ea5e9 0%, #8b5cf6 100%);
+      transition: width 0.3s; display: flex; align-items: center;
+      justify-content: center; color: white; font-weight: bold; font-size: 12px;
+    }
+    .step-info {
+      background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px;
+      padding: 14px 18px; margin-bottom: 24px; text-align: center;
+      font-size: 15px; color: #374151; min-height: 52px;
+    }
+    .step-info strong { color: #0ea5e9; }
+    .step-info code { background: #e0f2fe; padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #0369a1; }
+    .visualization {
+      background: #fafafa; padding: 20px; border-radius: 10px;
+      margin-bottom: 24px; border: 2px solid #e0f2fe;
+    }
+    .visualization h3 { text-align: center; color: #0ea5e9; margin-bottom: 16px; }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 18px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+    .legend-box { width: 22px; height: 22px; border-radius: 5px; border: 2px solid transparent; }
+
+    /* ── Array display ── */
+    .call-title {
+      text-align: center; font-weight: 700; font-size: 13px; color: #8b5cf6;
+      margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .array-wrap { overflow-x: auto; padding-bottom: 30px; }
+    .array-row {
+      display: flex; gap: 6px; justify-content: center; min-width: max-content; margin: 0 auto;
+    }
+    .cell-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .arr-cell {
+      width: 54px; height: 54px; border-radius: 10px; display: flex; align-items: center;
+      justify-content: center; font-weight: 900; font-size: 20px;
+      border: 3px solid; transition: all 0.4s;
+    }
+    /* zone colours */
+    .zone-gt     { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+    .zone-pivot  { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+    .zone-lt     { background: #dbeafe; border-color: #3b82f6; color: #1d4ed8; }
+    .zone-out    { background: #f1f5f9; border-color: #cbd5e1; color: #94a3b8; }
+    .zone-target { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+    .zone-normal { background: #e0f2fe; border-color: #0ea5e9; color: #0369a1; }
+
+    .cell-idx { font-size: 11px; color: #94a3b8; font-weight: 600; }
+    /* target marker */
+    .cell-col.is-target .arr-cell { box-shadow: 0 0 0 3px #16a34a; }
+    .cell-col.is-target .cell-idx::after { content: ' ← k-1'; color: #16a34a; font-weight: 700; }
+
+    /* ── Zone legend bar ── */
+    .zone-bar { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 12px 0 6px; }
+    .zone-chip {
+      padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 700;
+      border: 2px solid; transition: opacity 0.3s;
+    }
+    .zc-gt    { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+    .zc-pivot { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+    .zc-lt    { background: #dbeafe; border-color: #3b82f6; color: #1d4ed8; }
+    .zc-out   { background: #f1f5f9; border-color: #cbd5e1; color: #94a3b8; }
+
+    /* ── Recursion tracker ── */
+    .rec-area { margin-top: 18px; }
+    .rec-label { font-weight: 700; color: #0ea5e9; font-size: 13px; margin-bottom: 8px; text-align: center; }
+    .rec-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; min-height: 36px; }
+    .rec-chip {
+      padding: 6px 14px; border-radius: 8px; font-size: 14px; font-weight: 700;
+      border: 2px solid; transition: all 0.3s;
+    }
+    .rec-chip.active-rec  { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+    .rec-chip.skip-rec    { background: #f1f5f9; border-color: #cbd5e1; color: #94a3b8; text-decoration: line-through; }
+    .rec-chip.done-rec    { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+
+    /* ── Result ── */
+    .result-banner {
+      text-align: center; margin-top: 16px; padding: 14px; font-size: 18px; font-weight: 900;
+      border-radius: 10px; border: 3px solid; transition: all 0.4s;
+      background: #f1f5f9; border-color: #cbd5e1; color: #94a3b8;
+    }
+    .result-banner.done { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+
+    .code-section { background: #1e1e1e; border-radius: 10px; padding: 20px; overflow-x: auto; margin-bottom: 6px; }
+    .code-section pre { color: #d4d4d4; font-family: 'Courier New', monospace; font-size: 13.5px; line-height: 1.7; }
+    .code-kw { color: #569cd6; }
+    .code-type { color: #4ec9b0; }
+    .code-com { color: #6a9955; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>0215 - Kth Largest Element in an Array</h1>
+  <p class="subtitle">Quick 3-way Partition Sort parcial — padrão Top K Elements</p>
+
+  <div class="explanation">
+    <h2>Como funciona?</h2>
+    <p>Input de teste: <code>nums = [3, 2, 1, 5, 6, 4]</code>, <code>k = 2</code> → resultado esperado: <code>5</code></p>
+    <p>O algoritmo usa <strong>Quick 3-way Sort parcial</strong> (descending). A cada partição, os elementos são divididos em 3 zonas em relação ao <em>pivot</em>:</p>
+    <p>• <span style="background:#fee2e2;padding:1px 5px;border-radius:3px;color:#991b1b;font-weight:700">&gt; pivot</span> (à esquerda) &nbsp;·&nbsp; <span style="background:#fef3c7;padding:1px 5px;border-radius:3px;color:#92400e;font-weight:700">= pivot</span> (centro) &nbsp;·&nbsp; <span style="background:#dbeafe;padding:1px 5px;border-radius:3px;color:#1d4ed8;font-weight:700">&lt; pivot</span> (à direita)</p>
+    <p>A chave da eficiência: se o índice alvo <code>k-1</code> já está numa zona <em>igual ao pivot</em>, paramos. Se está à esquerda ou direita, <strong>recursamos apenas nessa metade</strong> (as outras são descartadas com <code>lo &ge; k</code> ou <code>hi &lt; k-1</code>).</p>
+    <p><strong>Complexidade:</strong> Tempo O(n) esperado · Espaço O(log n) pilha</p>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn" onclick="play()">▶ Play</button>
+    <button id="stepBtn" onclick="stepFwd()">⏭ Step</button>
+    <button onclick="reset()">↺ Reset</button>
+    <div class="speed-control">
+      <span>Velocidade:</span>
+      <input type="range" id="speedRange" min="300" max="2500" value="1100" step="100">
+      <span id="speedLabel">1100ms</span>
+    </div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%">0%</div></div>
+  <div class="step-info" id="stepInfo">Pressione <strong>Play</strong> ou <strong>Step</strong> para começar.</div>
+
+  <div class="visualization">
+    <h3>Input: [3, 2, 1, 5, 6, 4] &nbsp;·&nbsp; k = 2 &nbsp;·&nbsp; Alvo: índice k−1 = <span style="color:#16a34a">1</span></h3>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-box" style="background:#fee2e2;border-color:#ef4444;"></div> &gt; pivot</div>
+      <div class="legend-item"><div class="legend-box" style="background:#fef3c7;border-color:#f59e0b;"></div> = pivot</div>
+      <div class="legend-item"><div class="legend-box" style="background:#dbeafe;border-color:#3b82f6;"></div> &lt; pivot</div>
+      <div class="legend-item"><div class="legend-box" style="background:#f1f5f9;border-color:#cbd5e1;"></div> fora do escopo</div>
+      <div class="legend-item"><div class="legend-box" style="background:#dcfce7;border-color:#16a34a;"></div> resultado encontrado ✅</div>
+    </div>
+
+    <div class="call-title" id="callTitle">Chamada inicial</div>
+    <div class="array-wrap">
+      <div class="array-row" id="arrayRow"></div>
+    </div>
+
+    <div class="zone-bar" id="zoneBar"></div>
+
+    <div class="rec-area">
+      <div class="rec-label">Rastreamento de Recursões</div>
+      <div class="rec-row" id="recRow"></div>
+    </div>
+
+    <div class="result-banner" id="resultBanner">Resultado: aguardando…</div>
+  </div>
+
+  <div class="code-section">
+    <pre><span class="code-kw">private void</span> Quick3WaySort(<span class="code-kw">int</span>[] nums, <span class="code-kw">int</span> lo, <span class="code-kw">int</span> hi, <span class="code-kw">int</span> k)
+{
+    <span class="code-kw">if</span> (lo >= hi)    <span class="code-kw">return</span>;                         <span class="code-com">// base: range unitário</span>
+    <span class="code-kw">if</span> (lo >= k)     <span class="code-kw">return</span>;                         <span class="code-com">// ← poda: alvo já à esquerda</span>
+    <span class="code-kw">if</span> (hi &lt; k - 1)  <span class="code-kw">return</span>;                         <span class="code-com">// ← poda: alvo já à direita</span>
+
+    <span class="code-com">// particiona em 3 zonas (descending): [>pivot] [=pivot] [&lt;pivot]</span>
+    <span class="code-kw">int</span> lt = hi, gt = lo, i = lo, pivot = nums[i];
+    <span class="code-kw">while</span> (i &lt;= lt) {
+        <span class="code-kw">if</span>      (nums[i] &gt; pivot) Swap(nums, gt++, i);    <span class="code-com">// vai p/ esquerda</span>
+        <span class="code-kw">else if</span> (nums[i] &lt; pivot) Swap(nums, lt--, i);    <span class="code-com">// vai p/ direita</span>
+        <span class="code-kw">else</span>                      i++;                      <span class="code-com">// igual: avança</span>
+    }
+    Quick3WaySort(nums, lo, gt - 1, k);                   <span class="code-com">// ← recurse esquerda</span>
+    Quick3WaySort(nums, lt + 1, hi, k);                   <span class="code-com">// ← recurse direita</span>
+}
+<span class="code-com">// return nums[k - 1]  →  resultado final</span></pre>
+  </div>
+</div>
+
+<script>
+const TARGET_IDX = 1; // k-1 = 2-1 = 1
+
+// Each step: { arr, zones (one per cell: 'gt'|'pivot'|'lt'|'out'|'target'|'normal'),
+//              callTitle, recs [{label, state}], zoneBar [{label, cls}], done, info }
+// zones 'gt'   → cell zone > pivot (red)
+// zones 'pivot'→ cell zone = pivot (yellow)
+// zones 'lt'   → cell zone < pivot (blue)
+// zones 'out'  → outside active range (gray)
+// zones 'target' → final answer (green)
+// zones 'normal' → not yet processed (light blue)
+
+const steps = [
+  {
+    arr: [3,2,1,5,6,4],
+    zones: ['normal','normal','normal','normal','normal','normal'],
+    callTitle: 'Quick3WaySort(lo=0, hi=5, k=2) — pivot = nums[0] = 3',
+    recs: [{ label: 'Quick3WaySort(0, 5)', state: 'active-rec' }],
+    zoneBar: [],
+    done: false,
+    info: 'Início: <strong>Quick3WaySort(lo=0, hi=5, k=2)</strong>. pivot = nums[0] = <strong>3</strong>. Iniciando partição 3-way...'
+  },
+  {
+    arr: [4,6,5,3,1,2],
+    zones: ['gt','gt','gt','pivot','lt','lt'],
+    callTitle: 'Após partição (pivot=3): 3 zonas formadas',
+    recs: [{ label: 'Quick3WaySort(0, 5)', state: 'active-rec' }],
+    zoneBar: [
+      { label: '[0..2]: > 3 (4,6,5)', cls: 'zc-gt' },
+      { label: '[3..3]: = 3 (pivot)', cls: 'zc-pivot' },
+      { label: '[4..5]: < 3 (1,2)', cls: 'zc-lt' },
+    ],
+    done: false,
+    info: 'Partição concluída: <span style="color:#ef4444;font-weight:700">[4,6,5]</span> (>3) · <span style="color:#d97706;font-weight:700">[3]</span> (=3) · <span style="color:#3b82f6;font-weight:700">[1,2]</span> (<3). Índice alvo <strong>k-1=1</strong> está na zona esquerda [0..2]. <span style="color:#ef4444">Recurse para [0..2]</span>.'
+  },
+  {
+    arr: [4,6,5,3,1,2],
+    zones: ['normal','normal','normal','out','out','out'],
+    callTitle: 'Quick3WaySort(lo=0, hi=2, k=2) — pivot = nums[0] = 4',
+    recs: [
+      { label: 'Quick3WaySort(0, 5)', state: 'done-rec' },
+      { label: 'Quick3WaySort(0, 2)', state: 'active-rec' },
+      { label: 'Quick3WaySort(4, 5)', state: 'skip-rec' },
+    ],
+    zoneBar: [],
+    done: false,
+    info: '<strong>Quick3WaySort(lo=0, hi=2, k=2)</strong>. pivot = nums[0] = <strong>4</strong>. Zona direita [4..5]: <code>lo=4 &ge; k=2</code> → <strong>poda</strong> (retorno imediato).'
+  },
+  {
+    arr: [6,5,4,3,1,2],
+    zones: ['gt','gt','pivot','out','out','out'],
+    callTitle: 'Após partição (pivot=4): 3 zonas em [0..2]',
+    recs: [
+      { label: 'Quick3WaySort(0, 5)', state: 'done-rec' },
+      { label: 'Quick3WaySort(0, 2)', state: 'active-rec' },
+      { label: 'Quick3WaySort(4, 5) — podada', state: 'skip-rec' },
+    ],
+    zoneBar: [
+      { label: '[0..1]: > 4 (6,5)', cls: 'zc-gt' },
+      { label: '[2..2]: = 4 (pivot)', cls: 'zc-pivot' },
+      { label: '[3..2]: < 4 (vazio)', cls: 'zc-lt' },
+    ],
+    done: false,
+    info: 'Partição: <span style="color:#ef4444;font-weight:700">[6,5]</span> (>4) · <span style="color:#d97706;font-weight:700">[4]</span> (=4) · vazio. Índice alvo <strong>k-1=1</strong> está na zona esquerda [0..1]. <span style="color:#ef4444">Recurse para [0..1]</span>.'
+  },
+  {
+    arr: [6,5,4,3,1,2],
+    zones: ['normal','normal','out','out','out','out'],
+    callTitle: 'Quick3WaySort(lo=0, hi=1, k=2) — pivot = nums[0] = 6',
+    recs: [
+      { label: 'Quick3WaySort(0, 5)', state: 'done-rec' },
+      { label: 'Quick3WaySort(0, 2)', state: 'done-rec' },
+      { label: 'Quick3WaySort(0, 1)', state: 'active-rec' },
+      { label: 'Quick3WaySort(3, 2) — podada', state: 'skip-rec' },
+    ],
+    zoneBar: [],
+    done: false,
+    info: '<strong>Quick3WaySort(lo=0, hi=1, k=2)</strong>. pivot = nums[0] = <strong>6</strong>. Zona direita: lo=3>hi=2 → <strong>poda</strong>.'
+  },
+  {
+    arr: [6,5,4,3,1,2],
+    zones: ['pivot','lt','out','out','out','out'],
+    callTitle: 'Após partição (pivot=6): [6] · [5]',
+    recs: [
+      { label: 'Quick3WaySort(0, 5)', state: 'done-rec' },
+      { label: 'Quick3WaySort(0, 2)', state: 'done-rec' },
+      { label: 'Quick3WaySort(0, 1)', state: 'active-rec' },
+      { label: 'Quick3WaySort(3, 2) — podada', state: 'skip-rec' },
+    ],
+    zoneBar: [
+      { label: '[0..-1]: > 6 (vazio)', cls: 'zc-gt' },
+      { label: '[0..0]: = 6 (pivot)', cls: 'zc-pivot' },
+      { label: '[1..1]: < 6 → [5]', cls: 'zc-lt' },
+    ],
+    done: false,
+    info: 'Partição: vazio (>6) · <span style="color:#d97706;font-weight:700">[6]</span> (=6, índice 0) · <span style="color:#3b82f6;font-weight:700">[5]</span> (<6, índice 1). Sub-ranges: lo&ge;hi → <strong>todas as recursões param</strong> (base case).'
+  },
+  {
+    arr: [6,5,4,3,1,2],
+    zones: ['out','target','out','out','out','out'],
+    callTitle: '✅ Resultado: nums[k−1] = nums[1] = 5',
+    recs: [
+      { label: 'Quick3WaySort(0, 5)', state: 'done-rec' },
+      { label: 'Quick3WaySort(0, 2)', state: 'done-rec' },
+      { label: 'Quick3WaySort(0, 1)', state: 'done-rec' },
+    ],
+    zoneBar: [],
+    done: true,
+    info: '✅ Array parcialmente ordenado: <strong>[6, 5, ...]</strong>. <code>return nums[k-1] = nums[1] = <strong>5</strong></code>. O 2º maior elemento é <strong>5</strong>!'
+  },
+];
+
+let current = 0, timer = null;
+
+const ZONE_CSS = {
+  gt:     'arr-cell zone-gt',
+  pivot:  'arr-cell zone-pivot',
+  lt:     'arr-cell zone-lt',
+  out:    'arr-cell zone-out',
+  target: 'arr-cell zone-target',
+  normal: 'arr-cell zone-normal',
+};
+
+function renderArray(arr, zones) {
+  const row = document.getElementById('arrayRow');
+  row.innerHTML = arr.map((v, i) => {
+    const isTarget = (i === TARGET_IDX);
+    return `<div class="cell-col${isTarget ? ' is-target' : ''}">
+      <div class="${ZONE_CSS[zones[i]] || ZONE_CSS.normal}">${v}</div>
+      <span class="cell-idx">[${i}]</span>
+    </div>`;
+  }).join('');
+}
+
+function renderZoneBar(zoneBar) {
+  const zb = document.getElementById('zoneBar');
+  if (!zoneBar || zoneBar.length === 0) { zb.innerHTML = ''; return; }
+  zb.innerHTML = zoneBar.map(z => `<div class="zone-chip ${z.cls}">${z.label}</div>`).join('');
+}
+
+function renderRecs(recs) {
+  const row = document.getElementById('recRow');
+  if (!recs || recs.length === 0) { row.innerHTML = ''; return; }
+  row.innerHTML = recs.map(r => `<div class="rec-chip ${r.state}">${r.label}</div>`).join('');
+}
+
+function render(idx) {
+  const s = steps[idx];
+  document.getElementById('callTitle').textContent = s.callTitle;
+  renderArray(s.arr, s.zones);
+  renderZoneBar(s.zoneBar);
+  renderRecs(s.recs);
+
+  const rb = document.getElementById('resultBanner');
+  if (s.done) {
+    rb.className = 'result-banner done';
+    rb.innerHTML = '✅ <strong>nums[k−1] = nums[1] = 5</strong> — o 2º maior elemento do array';
+  } else {
+    rb.className = 'result-banner';
+    rb.textContent = 'Resultado: aguardando…';
+  }
+
+  document.getElementById('stepInfo').innerHTML = s.info;
+  const pct = Math.round(idx / (steps.length - 1) * 100);
+  const pf = document.getElementById('progressFill');
+  pf.style.width = pct + '%'; pf.textContent = pct + '%';
+  document.getElementById('stepBtn').disabled = idx >= steps.length - 1;
+  document.getElementById('playBtn').disabled = idx >= steps.length - 1;
+}
+
+function stepFwd() { if (current < steps.length - 1) { current++; render(current); } }
+
+function play() {
+  if (timer) return;
+  document.getElementById('playBtn').disabled = true;
+  const speed = parseInt(document.getElementById('speedRange').value);
+  timer = setInterval(() => {
+    if (current < steps.length - 1) { current++; render(current); }
+    else { clearInterval(timer); timer = null; }
+  }, speed);
+}
+
+function reset() {
+  clearInterval(timer); timer = null;
+  current = 0; render(0);
+  document.getElementById('playBtn').disabled = false;
+}
+
+document.getElementById('speedRange').addEventListener('input', function () {
+  document.getElementById('speedLabel').textContent = this.value + 'ms';
+  if (timer) { clearInterval(timer); timer = null; play(); }
+});
+
+render(0);
+</script>
+</body>
+</html>

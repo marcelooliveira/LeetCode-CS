@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizacao: 0347 - Top K Frequent Elements</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
+      padding: 20px; min-height: 100vh;
+    }
+    .container {
+      max-width: 1050px; margin: 0 auto; background: white;
+      border-radius: 20px; padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 { color: #0ea5e9; text-align: center; margin-bottom: 8px; font-size: 2em; }
+    .subtitle { text-align: center; color: #666; margin-bottom: 24px; font-size: 1.05em; }
+    .explanation {
+      background: #f0f9ff; padding: 18px 22px; border-radius: 10px;
+      margin-bottom: 26px; border-left: 5px solid #0ea5e9;
+    }
+    .explanation h2 { color: #0ea5e9; margin-bottom: 10px; }
+    .explanation p { line-height: 1.8; color: #333; margin-bottom: 8px; }
+    .explanation code {
+      background: #e0f2fe; padding: 2px 6px; border-radius: 3px;
+      font-family: 'Courier New', monospace; color: #0369a1;
+    }
+    .controls {
+      display: flex; gap: 12px; margin-bottom: 26px;
+      flex-wrap: wrap; justify-content: center; align-items: center;
+    }
+    button {
+      background: #0ea5e9; color: white; border: none;
+      padding: 11px 22px; border-radius: 8px; cursor: pointer;
+      font-size: 15px; font-weight: 600; transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(14,165,233,0.4);
+    }
+    button:hover { background: #0284c7; transform: translateY(-2px); }
+    button:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+    #stepBtn { background: #8b5cf6; box-shadow: 0 4px 15px rgba(139,92,246,0.4); }
+    #stepBtn:hover { background: #7c3aed; }
+    #stepBtn:disabled { background: #ccc; box-shadow: none; }
+    .speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+    input[type="range"] { width: 120px; }
+    .progress-bar {
+      width: 100%; height: 22px; background: #e9ecef;
+      border-radius: 11px; overflow: hidden; margin-bottom: 20px;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, #0ea5e9 0%, #8b5cf6 100%);
+      transition: width 0.3s; display: flex; align-items: center;
+      justify-content: center; color: white; font-weight: bold; font-size: 12px;
+    }
+    .step-info {
+      background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px;
+      padding: 14px 18px; margin-bottom: 24px; text-align: center;
+      font-size: 15px; color: #374151; min-height: 52px;
+    }
+    .step-info strong { color: #0ea5e9; }
+    .step-info code { background: #e0f2fe; padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #0369a1; }
+    .visualization {
+      background: #fafafa; padding: 20px; border-radius: 10px;
+      margin-bottom: 24px; border: 2px solid #e0f2fe;
+    }
+    .visualization h3 { text-align: center; color: #0ea5e9; margin-bottom: 18px; }
+
+    /* ── Input array ── */
+    .array-label { font-weight: 700; font-size: 13px; color: #6b7280; margin-bottom: 8px; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
+    .array-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 22px; flex-wrap: wrap; }
+    .arr-box {
+      width: 52px; height: 52px; border-radius: 10px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; font-weight: 900; font-size: 20px;
+      border: 3px solid #0ea5e9; background: #e0f2fe; color: #0369a1;
+      transition: all 0.35s; position: relative;
+    }
+    .arr-box .idx-label {
+      position: absolute; bottom: -20px; font-size: 11px; color: #94a3b8; font-weight: 600;
+    }
+    .arr-box.current  { background: #fef3c7; border-color: #f59e0b; color: #92400e; transform: translateY(-6px) scale(1.12); }
+    .arr-box.counted  { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+    .arr-box.normal   { background: #e0f2fe; border-color: #0ea5e9; color: #0369a1; }
+
+    /* ── Dictionary ── */
+    .panels { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 20px; }
+    .panel { background: white; border-radius: 12px; padding: 16px 18px; border: 2px solid #e2e8f0; flex: 1; min-width: 200px; }
+    .panel-label { font-weight: 700; font-size: 12px; color: #6b7280; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .dict-row { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; transition: all 0.3s; }
+    .dict-key {
+      width: 50px; height: 38px; border-radius: 7px; display: flex; align-items: center;
+      justify-content: center; font-weight: 900; font-size: 18px;
+      border: 2px solid #0ea5e9; background: #e0f2fe; color: #0369a1;
+    }
+    .dict-sep { color: #94a3b8; font-size: 14px; font-weight: 700; }
+    .dict-val {
+      min-width: 36px; height: 38px; border-radius: 7px; display: flex; align-items: center;
+      justify-content: center; font-weight: 900; font-size: 18px; padding: 0 10px;
+      border: 2px solid #8b5cf6; background: #ede9fe; color: #5b21b6;
+      transition: all 0.4s;
+    }
+    .dict-val.updated { background: #f59e0b; border-color: #d97706; color: white; }
+    .dict-row.new-entry .dict-key { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+
+    /* ── Bar chart ── */
+    .chart-area { display: flex; gap: 18px; align-items: flex-end; justify-content: center; height: 100px; margin-top: 8px; }
+    .bar-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .bar-val-label { font-size: 13px; font-weight: 800; color: #374151; }
+    .bar {
+      width: 44px; border-radius: 6px 6px 0 0;
+      transition: height 0.5s ease, background 0.4s;
+      min-height: 0;
+    }
+    .bar-key-label { font-size: 13px; font-weight: 700; color: #6b7280; }
+
+    /* ── Sorted + result ── */
+    .sorted-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .sorted-chip {
+      padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 15px;
+      border: 2px solid; transition: all 0.4s;
+    }
+    .sorted-chip.normal-chip { border-color: #8b5cf6; background: #ede9fe; color: #5b21b6; }
+    .sorted-chip.topk-chip   { border-color: #16a34a; background: #dcfce7; color: #14532d; }
+    .sorted-chip.skip-chip   { border-color: #cbd5e1; background: #f1f5f9; color: #94a3b8; }
+
+    .result-badge {
+      text-align: center; padding: 14px; font-size: 18px; font-weight: 900;
+      border-radius: 10px; border: 3px solid; transition: all 0.4s;
+      background: #f1f5f9; border-color: #cbd5e1; color: #94a3b8;
+    }
+    .result-badge.done { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+
+    .code-section { background: #1e1e1e; border-radius: 10px; padding: 20px; overflow-x: auto; margin-bottom: 6px; }
+    .code-section pre { color: #d4d4d4; font-family: 'Courier New', monospace; font-size: 13.5px; line-height: 1.7; }
+    .code-kw { color: #569cd6; }
+    .code-type { color: #4ec9b0; }
+    .code-com { color: #6a9955; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>0347 - Top K Frequent Elements</h1>
+  <p class="subtitle">Dictionary de frequências + OrderByDescending + Take(k) — padrão Top K Elements</p>
+
+  <div class="explanation">
+    <h2>Como funciona?</h2>
+    <p>Input de teste: <code>nums = [1, 1, 1, 2, 2, 3]</code>, <code>k = 2</code> → resultado esperado: <code>[1, 2]</code></p>
+    <p><strong>Fase 1:</strong> Percorre o array e conta a frequência de cada número num <code>Dictionary&lt;int,int&gt;</code>.</p>
+    <p><strong>Fase 2:</strong> Ordena o dicionário por frequência decrescente (<code>OrderByDescending</code>), extrai as chaves e pega os primeiros <code>k</code> com <code>Take(k)</code>.</p>
+    <p>Resultado: <code>1</code> aparece 3×, <code>2</code> aparece 2×, <code>3</code> aparece 1× → Top 2 = <code>[1, 2]</code>.</p>
+    <p><strong>Complexidade:</strong> Tempo O(n log n) · Espaço O(n)</p>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn" onclick="play()">▶ Play</button>
+    <button id="stepBtn" onclick="stepFwd()">⏭ Step</button>
+    <button onclick="reset()">↺ Reset</button>
+    <div class="speed-control">
+      <span>Velocidade:</span>
+      <input type="range" id="speedRange" min="300" max="2500" value="950" step="100">
+      <span id="speedLabel">950ms</span>
+    </div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%">0%</div></div>
+  <div class="step-info" id="stepInfo">Pressione <strong>Play</strong> ou <strong>Step</strong> para começar.</div>
+
+  <div class="visualization">
+    <h3>Input: nums = [1, 1, 1, 2, 2, 3] &nbsp;·&nbsp; k = 2</h3>
+
+    <!-- Input array -->
+    <div class="array-label">Array de entrada</div>
+    <div class="array-row" id="arrayRow"></div>
+
+    <div class="panels">
+      <!-- Dictionary -->
+      <div class="panel" style="max-width:260px">
+        <div class="panel-label">Dictionary&lt;int,int&gt; counts</div>
+        <div id="dictArea"><span style="color:#aaa;font-size:13px">vazio</span></div>
+      </div>
+
+      <!-- Bar chart -->
+      <div class="panel" style="flex:2">
+        <div class="panel-label">Frequências (gráfico de barras)</div>
+        <div class="chart-area" id="chartArea">
+          <span style="color:#aaa;font-size:13px;align-self:center">aguardando...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sorted chips -->
+    <div class="array-label" id="sortedLabel" style="opacity:0.3">Ordenado por frequência ↓ (OrderByDescending)</div>
+    <div class="sorted-row" id="sortedRow" style="margin-bottom:16px"></div>
+
+    <!-- Result -->
+    <div class="result-badge" id="resultBadge">Resultado: aguardando…</div>
+  </div>
+
+  <div class="code-section">
+    <pre><span class="code-kw">public</span> <span class="code-type">IList</span>&lt;<span class="code-kw">int</span>&gt; TopKFrequent(<span class="code-kw">int</span>[] nums, <span class="code-kw">int</span> k)
+{
+    <span class="code-kw">var</span> counts = <span class="code-kw">new</span> <span class="code-type">Dictionary</span>&lt;<span class="code-kw">int</span>, <span class="code-kw">int</span>&gt;();
+    <span class="code-kw">foreach</span> (<span class="code-kw">var</span> num <span class="code-kw">in</span> nums)                         <span class="code-com">// ← fase 1: conta frequências</span>
+    {
+        <span class="code-kw">if</span> (!counts.ContainsKey(num))
+            counts.Add(num, 0);
+        counts[num]++;
+    }
+
+    <span class="code-kw">return</span> counts
+        .OrderByDescending(pair =&gt; pair.Value)         <span class="code-com">// ← fase 2: ordena por freq.</span>
+        .Select(pair =&gt; pair.Key)
+        .Take(k)                                        <span class="code-com">// ← pega top k</span>
+        .ToList();
+}</pre>
+  </div>
+</div>
+
+<script>
+const NUMS = [1, 1, 1, 2, 2, 3];
+const K = 2;
+const BAR_COLORS = { 1: '#0ea5e9', 2: '#8b5cf6', 3: '#f59e0b' };
+
+// Steps: { curIdx, counts, updatedKey, phase, sorted, topK, info }
+const steps = [
+  { curIdx: -1, counts: {}, updatedKey: null, phase: 'count', sorted: null, topK: null,
+    info: 'Início: <strong>counts</strong> = {} (dicionário vazio). Vamos percorrer cada elemento.' },
+  { curIdx: 0, counts: { 1: 1 }, updatedKey: 1, phase: 'count', sorted: null, topK: null,
+    info: 'num=<strong>1</strong>: não existe em counts → Add(1,0) → counts[1]++ = <strong>1</strong>.' },
+  { curIdx: 1, counts: { 1: 2 }, updatedKey: 1, phase: 'count', sorted: null, topK: null,
+    info: 'num=<strong>1</strong>: já existe em counts → counts[1]++ = <strong>2</strong>.' },
+  { curIdx: 2, counts: { 1: 3 }, updatedKey: 1, phase: 'count', sorted: null, topK: null,
+    info: 'num=<strong>1</strong>: já existe em counts → counts[1]++ = <strong>3</strong>.' },
+  { curIdx: 3, counts: { 1: 3, 2: 1 }, updatedKey: 2, phase: 'count', sorted: null, topK: null,
+    info: 'num=<strong>2</strong>: não existe em counts → Add(2,0) → counts[2]++ = <strong>1</strong>.' },
+  { curIdx: 4, counts: { 1: 3, 2: 2 }, updatedKey: 2, phase: 'count', sorted: null, topK: null,
+    info: 'num=<strong>2</strong>: já existe em counts → counts[2]++ = <strong>2</strong>.' },
+  { curIdx: 5, counts: { 1: 3, 2: 2, 3: 1 }, updatedKey: 3, phase: 'count', sorted: null, topK: null,
+    info: 'num=<strong>3</strong>: não existe em counts → Add(3,0) → counts[3]++ = <strong>1</strong>. Fase 1 concluída!' },
+  { curIdx: -1, counts: { 1: 3, 2: 2, 3: 1 }, updatedKey: null, phase: 'sort',
+    sorted: [{ key: 1, val: 3 }, { key: 2, val: 2 }, { key: 3, val: 1 }], topK: null,
+    info: '<strong>OrderByDescending(freq)</strong>: 1(3×) → 2(2×) → 3(1×). Ordenação concluída!' },
+  { curIdx: -1, counts: { 1: 3, 2: 2, 3: 1 }, updatedKey: null, phase: 'take',
+    sorted: [{ key: 1, val: 3 }, { key: 2, val: 2 }, { key: 3, val: 1 }], topK: [1, 2],
+    info: '<strong>Take(k=2)</strong>: pega os 2 primeiros → <code>[1, 2]</code>. Pronto!' },
+];
+
+let current = 0, timer = null;
+
+function renderArrayRow(curIdx, counts) {
+  const row = document.getElementById('arrayRow');
+  row.innerHTML = NUMS.map((v, i) => {
+    let cls = 'arr-box';
+    if (i === curIdx) cls += ' current';
+    else if (i < curIdx) cls += ' counted';
+    else cls += ' normal';
+    return `<div class="${cls}">${v}<span class="idx-label">[${i}]</span></div>`;
+  }).join('');
+}
+
+function renderDict(counts, updatedKey) {
+  const area = document.getElementById('dictArea');
+  const keys = Object.keys(counts).map(Number);
+  if (keys.length === 0) { area.innerHTML = '<span style="color:#aaa;font-size:13px">vazio</span>'; return; }
+  area.innerHTML = keys.map(k => {
+    const isNew = (k === updatedKey && counts[k] === 1);
+    const isUpdated = (k === updatedKey);
+    return `<div class="dict-row${isNew ? ' new-entry' : ''}">
+      <div class="dict-key">${k}</div>
+      <span class="dict-sep">→</span>
+      <div class="dict-val${isUpdated ? ' updated' : ''}">${counts[k]}</div>
+    </div>`;
+  }).join('');
+  // Remove 'updated' class after short delay for pulse effect
+  if (updatedKey !== null) {
+    setTimeout(() => {
+      document.querySelectorAll('.dict-val.updated').forEach(el => el.classList.remove('updated'));
+    }, 500);
+  }
+}
+
+function renderChart(counts) {
+  const area = document.getElementById('chartArea');
+  const keys = Object.keys(counts).map(Number);
+  if (keys.length === 0) { area.innerHTML = '<span style="color:#aaa;font-size:13px;align-self:center">aguardando...</span>'; return; }
+  const maxVal = Math.max(...Object.values(counts));
+  area.innerHTML = keys.map(k => {
+    const v = counts[k];
+    const h = Math.round((v / maxVal) * 80);
+    const color = BAR_COLORS[k] || '#0ea5e9';
+    return `<div class="bar-col">
+      <span class="bar-val-label">${v}×</span>
+      <div class="bar" style="height:${h}px;background:${color}"></div>
+      <span class="bar-key-label">${k}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderSorted(sorted, topK) {
+  const label = document.getElementById('sortedLabel');
+  const row = document.getElementById('sortedRow');
+  if (!sorted) { label.style.opacity = '0.3'; row.innerHTML = ''; return; }
+  label.style.opacity = '1';
+  row.innerHTML = sorted.map((entry, i) => {
+    let cls = 'sorted-chip ';
+    if (topK && topK.includes(entry.key)) cls += 'topk-chip';
+    else if (topK) cls += 'skip-chip';
+    else cls += 'normal-chip';
+    return `<div class="${cls}">${entry.key} (freq: ${entry.val})${topK && i < K ? ' ✅' : (topK ? ' ✗' : '')}</div>`;
+  }).join('');
+}
+
+function renderResult(topK) {
+  const rb = document.getElementById('resultBadge');
+  if (!topK) { rb.className = 'result-badge'; rb.textContent = 'Resultado: aguardando…'; return; }
+  rb.className = 'result-badge done';
+  rb.innerHTML = `✅ Resultado: <strong>[${topK.join(', ')}]</strong> — os ${K} elementos mais frequentes`;
+}
+
+function render(idx) {
+  const s = steps[idx];
+  renderArrayRow(s.curIdx, s.counts);
+  renderDict(s.counts, s.updatedKey);
+  renderChart(s.counts);
+  renderSorted(s.sorted, s.topK);
+  renderResult(s.topK);
+  document.getElementById('stepInfo').innerHTML = s.info;
+  const pct = Math.round(idx / (steps.length - 1) * 100);
+  const pf = document.getElementById('progressFill');
+  pf.style.width = pct + '%'; pf.textContent = pct + '%';
+  document.getElementById('stepBtn').disabled = idx >= steps.length - 1;
+  document.getElementById('playBtn').disabled = idx >= steps.length - 1;
+}
+
+function stepFwd() { if (current < steps.length - 1) { current++; render(current); } }
+
+function play() {
+  if (timer) return;
+  document.getElementById('playBtn').disabled = true;
+  const speed = parseInt(document.getElementById('speedRange').value);
+  timer = setInterval(() => {
+    if (current < steps.length - 1) { current++; render(current); }
+    else { clearInterval(timer); timer = null; }
+  }, speed);
+}
+
+function reset() {
+  clearInterval(timer); timer = null;
+  current = 0; render(0);
+  document.getElementById('playBtn').disabled = false;
+}
+
+document.getElementById('speedRange').addEventListener('input', function () {
+  document.getElementById('speedLabel').textContent = this.value + 'ms';
+  if (timer) { clearInterval(timer); timer = null; play(); }
+});
+
+render(0);
+</script>
+</body>
+</html>
