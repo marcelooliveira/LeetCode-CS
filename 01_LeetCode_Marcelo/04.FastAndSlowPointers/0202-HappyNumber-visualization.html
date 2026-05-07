@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Visualizacao: 0202 - Happy Number</title>
+	<style>
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #d97706 0%, #f97316 100%);
+			padding: 20px; min-height: 100vh;
+		}
+		.container {
+			max-width: 1100px; margin: 0 auto; background: white;
+			border-radius: 20px; padding: 30px;
+			box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+		}
+		h1 { color: #d97706; text-align: center; margin-bottom: 8px; font-size: 2.1em; }
+		.subtitle { text-align: center; color: #666; margin-bottom: 26px; font-size: 1.05em; }
+		.explanation {
+			background: #fffbeb; padding: 20px; border-radius: 10px;
+			margin-bottom: 26px; border-left: 5px solid #d97706;
+		}
+		.explanation h2 { color: #d97706; margin-bottom: 12px; }
+		.explanation p { line-height: 1.8; color: #333; margin-bottom: 8px; }
+		.explanation code {
+			background: #fef3c7; padding: 2px 6px; border-radius: 3px;
+			font-family: 'Courier New', monospace; color: #92400e;
+		}
+		.controls {
+			display: flex; gap: 12px; margin-bottom: 26px;
+			flex-wrap: wrap; justify-content: center; align-items: center;
+		}
+		button {
+			background: #d97706; color: white; border: none;
+			padding: 11px 20px; border-radius: 8px; cursor: pointer;
+			font-size: 15px; font-weight: 600; transition: all 0.25s;
+			box-shadow: 0 4px 12px rgba(217,119,6,0.4);
+		}
+		button:hover { background: #b45309; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(217,119,6,0.55); }
+		button:disabled { background: #d1d5db; cursor: not-allowed; transform: none; box-shadow: none; }
+		button#stepBtn { background: #f97316; box-shadow: 0 4px 12px rgba(249,115,22,0.4); }
+		button#stepBtn:hover { background: #ea580c; }
+		button#stepBtn:disabled { background: #d1d5db; box-shadow: none; }
+		.speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+		input[type="range"] { width: 130px; accent-color: #d97706; }
+
+		/* ─── Main visualization ─── */
+		.visualization {
+			background: #fafafa; padding: 22px 20px 18px;
+			border-radius: 12px; margin-bottom: 22px; border: 2px solid #fde68a;
+		}
+		.visualization h3 { text-align: center; color: #d97706; margin-bottom: 16px; }
+
+		/* Big number display */
+		.n-display-wrap { text-align: center; margin-bottom: 20px; }
+		.n-label { font-size: 13px; color: #6b7280; margin-bottom: 6px; }
+		.n-display {
+			font-size: 72px; font-weight: 900; font-family: 'Courier New', monospace;
+			color: #d97706; line-height: 1; transition: all 0.3s;
+		}
+		.n-display.happy { color: #16a34a; animation: pulse 0.5s ease-in-out; }
+		@keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.15)} 100%{transform:scale(1)} }
+
+		/* Digit breakdown */
+		.compute-section {
+			background: white; border-radius: 10px; border: 2px solid #fde68a;
+			padding: 16px; margin-bottom: 16px; min-height: 90px;
+		}
+		.compute-section h4 { color: #d97706; font-size: 13px; margin-bottom: 12px; text-align: center; }
+		.digits-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; align-items: center; }
+		.digit-box {
+			display: flex; flex-direction: column; align-items: center; gap: 3px;
+		}
+		.digit-val {
+			width: 50px; height: 50px; border-radius: 10px;
+			background: #fef3c7; border: 2px solid #f59e0b;
+			display: flex; align-items: center; justify-content: center;
+			font-size: 22px; font-weight: 800; color: #92400e;
+		}
+		.digit-sq {
+			font-size: 13px; color: #6b7280; font-family: 'Courier New', monospace;
+		}
+		.plus-sign { font-size: 20px; font-weight: 700; color: #d97706; align-self: center; padding-bottom: 20px; }
+		.equals-sign { font-size: 20px; font-weight: 700; color: #374151; align-self: center; padding-bottom: 20px; }
+		.sum-box {
+			display: flex; flex-direction: column; align-items: center; gap: 3px;
+		}
+		.sum-val {
+			padding: 8px 16px; border-radius: 10px; font-size: 22px; font-weight: 800;
+			font-family: 'Courier New', monospace; border: 2px solid;
+		}
+		.sum-val.normal { background: #fff7ed; border-color: #f97316; color: #9a3412; }
+		.sum-val.happy  { background: #f0fdf4; border-color: #16a34a; color: #14532d; }
+		.sum-label { font-size: 13px; color: #6b7280; }
+
+		/* HashSet */
+		.hashset-section {
+			background: white; border-radius: 10px; border: 2px solid #fde68a;
+			padding: 14px; margin-bottom: 16px;
+		}
+		.hashset-section h4 { color: #d97706; font-size: 13px; margin-bottom: 10px; text-align: center; }
+		.hashset-pills { display: flex; flex-wrap: wrap; gap: 8px; min-height: 36px; align-items: center; }
+		.hashset-pill {
+			padding: 5px 14px; border-radius: 20px; font-weight: 700; font-size: 14px;
+			background: #fef3c7; border: 2px solid #f59e0b; color: #92400e;
+			transition: all 0.3s;
+		}
+		.hashset-pill.new {
+			background: #fff7ed; border-color: #ea580c; color: #9a3412;
+			box-shadow: 0 0 8px rgba(249,115,22,0.5);
+		}
+
+		/* Iteration history table */
+		.history-section {
+			background: white; border-radius: 10px; border: 2px solid #fde68a;
+			padding: 14px;
+		}
+		.history-section h4 { color: #d97706; font-size: 13px; margin-bottom: 10px; text-align: center; }
+		.history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+		.history-table th {
+			background: #fef3c7; color: #92400e; padding: 7px 12px;
+			text-align: center; border-bottom: 2px solid #f59e0b;
+		}
+		.history-table td {
+			padding: 6px 12px; text-align: center; border-bottom: 1px solid #fde68a;
+			font-family: 'Courier New', monospace;
+		}
+		.history-table tr.active-row td { background: #fff7ed; font-weight: 700; }
+		.history-table tr.happy-row td { background: #f0fdf4; color: #15803d; font-weight: 700; }
+
+		.event-log {
+			padding: 12px 16px; background: #fffbeb;
+			border-radius: 8px; border-left: 4px solid #d97706;
+			font-size: 14px; color: #92400e; min-height: 44px; line-height: 1.55;
+			margin-top: 12px;
+		}
+
+		/* Stats */
+		.stats {
+			display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+			gap: 14px; margin-bottom: 22px;
+		}
+		.stat-card {
+			background: linear-gradient(135deg, #d97706 0%, #f97316 100%);
+			color: white; padding: 16px; border-radius: 12px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		}
+		.stat-label { font-size: 12px; opacity: 0.85; margin-bottom: 5px; }
+		.stat-value { font-size: 20px; font-weight: bold; font-family: 'Courier New', monospace; word-break: break-all; }
+
+		/* Algorithm steps */
+		.algorithm-steps { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 22px; }
+		.algorithm-steps h3 { color: #d97706; margin-bottom: 14px; }
+		.step {
+			padding: 11px 15px; margin-bottom: 8px; border-radius: 8px;
+			background: white; border-left: 4px solid #e5e7eb;
+			transition: all 0.3s; font-size: 14px; line-height: 1.55;
+		}
+		.step.active { border-left-color: #d97706; background: #fffbeb; transform: translateX(5px); }
+		.step-number {
+			display: inline-block; width: 26px; height: 26px; background: #d97706;
+			color: white; border-radius: 50%; text-align: center; line-height: 26px;
+			margin-right: 10px; font-weight: bold; font-size: 13px;
+		}
+		.complexity-info { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+		.complexity-card { background: #fffbeb; padding: 18px; border-radius: 10px; border-left: 5px solid #d97706; }
+		.complexity-card h3 { color: #d97706; margin-bottom: 8px; }
+		.complexity-card p { line-height: 1.7; color: #374151; }
+		.code-section { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px; overflow-x: auto; }
+		.code-section h3 { color: #d4d4d4; margin-bottom: 14px; }
+		.code-section pre { font-family: 'Courier New', monospace; line-height: 1.75; font-size: 13px; }
+		@media (max-width: 700px) {
+			h1 { font-size: 1.5em; }
+			.complexity-info { grid-template-columns: 1fr; }
+			.n-display { font-size: 50px; }
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+	<h1>&#x1F60A; Happy Number</h1>
+	<p class="subtitle">HashSet + Loop de Soma de Quadrados &mdash; LeetCode 0202</p>
+
+	<div class="explanation">
+		<h2>&#x1F4D6; Qual e o Problema?</h2>
+		<p>
+			Dado um inteiro <code>n</code>, substitua-o pela soma dos quadrados de seus digitos.
+			Repita ate <code>n == 1</code> (feliz!) ou ate ver um numero repetido (ciclo = infeliz).
+		</p>
+		<p>
+			Este visualizador usa <code>IsHappyTest</code>:
+			<br>
+			<strong>n = 19</strong> &rarr; resultado esperado: <strong>true</strong>
+		</p>
+		<p>
+			Sequencia: 19 &rarr; 1&sup2;+9&sup2;=82 &rarr; 8&sup2;+2&sup2;=68 &rarr; 6&sup2;+8&sup2;=100 &rarr; 1&sup2;+0&sup2;+0&sup2;=<strong>1</strong> &#x1F389;
+		</p>
+	</div>
+
+	<div class="controls">
+		<button id="startBtn" onclick="startVisualization()">&#9654;&#65039; Iniciar</button>
+		<button id="pauseBtn" onclick="pauseVisualization()" disabled>&#9208;&#65039; Pausar</button>
+		<button id="stepBtn"  onclick="doStep()">&#9197;&#65039; Passo</button>
+		<button id="resetBtn" onclick="resetVisualization()">&#128260; Resetar</button>
+		<div class="speed-control">
+			<label for="speedRange">Velocidade:</label>
+			<input type="range" id="speedRange" min="300" max="2500" value="900" step="100">
+			<span id="speedValue">900ms</span>
+		</div>
+	</div>
+
+	<div class="visualization">
+		<h3>Iteracoes da Soma de Quadrados dos Digitos</h3>
+
+		<div class="n-display-wrap">
+			<div class="n-label">Valor atual de n</div>
+			<div class="n-display" id="nDisplay">19</div>
+		</div>
+
+		<div class="compute-section">
+			<h4>&#x1F9EE; Decomposicao atual: digito &sup2; + digito &sup2; + &hellip; = soma</h4>
+			<div class="digits-row" id="digitsRow">
+				<span style="color:#9ca3af;font-size:13px;">Aguardando calculo...</span>
+			</div>
+		</div>
+
+		<div class="hashset-section">
+			<h4>&#x1F4CB; HashSet map (numeros ja vistos)</h4>
+			<div class="hashset-pills" id="hashPills">
+				<span style="color:#9ca3af;font-size:13px;">Vazio</span>
+			</div>
+		</div>
+
+		<div class="history-section">
+			<h4>&#x1F4CA; Historico de iteracoes</h4>
+			<table class="history-table" id="histTable">
+				<thead>
+					<tr><th>#</th><th>n</th><th>Calculo</th><th>Soma</th></tr>
+				</thead>
+				<tbody id="histBody"></tbody>
+			</table>
+		</div>
+
+		<div class="event-log" id="eventLog">Clique em "Iniciar" ou "Passo" para comecar...</div>
+	</div>
+
+	<div class="stats">
+		<div class="stat-card">
+			<div class="stat-label">n atual</div>
+			<div class="stat-value" id="statN">19</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Iteracao</div>
+			<div class="stat-value" id="statIter">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Numeros no map</div>
+			<div class="stat-value" id="statMap">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Resultado</div>
+			<div class="stat-value" id="statResult">—</div>
+		</div>
+	</div>
+
+	<div class="algorithm-steps">
+		<h3>&#x1F50D; Passos do Algoritmo</h3>
+		<div class="step" id="step1">
+			<span class="step-number">1</span>
+			<strong>Loop while:</strong> enquanto <code>n</code> nao estiver em <code>map</code>, continuar.
+			Se estiver, ha ciclo &rarr; retorna <code>false</code>.
+		</div>
+		<div class="step" id="step2">
+			<span class="step-number">2</span>
+			<strong>Adicionar ao map:</strong> <code>map.Add(n)</code>. Guardar n para detectar ciclo futuro.
+		</div>
+		<div class="step" id="step3">
+			<span class="step-number">3</span>
+			<strong>Calcular novo valor:</strong> extrair cada digito <code>d = n % 10</code>, acumular <code>d*d</code>, depois <code>n /= 10</code>.
+		</div>
+		<div class="step" id="step4">
+			<span class="step-number">4</span>
+			<strong>Checar == 1:</strong> se <code>newValue == 1</code> &rarr; numero feliz! Retorna <code>true</code> imediatamente.
+		</div>
+		<div class="step" id="step5">
+			<span class="step-number">5</span>
+			<strong>Continuar:</strong> <code>n = newValue</code> e voltar ao loop. Repetir ate encontrar 1 (feliz) ou ciclo (infeliz).
+		</div>
+	</div>
+
+	<div class="complexity-info">
+		<div class="complexity-card">
+			<h3>&#x23F1;&#xFE0F; Complexidade de Tempo</h3>
+			<p><strong>O(log n)</strong> por iteracao</p>
+			<p>O numero de digitos de n e O(log n). A sequencia converge para 1 ou entra em ciclo em O(log n) iteracoes.</p>
+		</div>
+		<div class="complexity-card">
+			<h3>&#x1F4BE; Complexidade de Espaco</h3>
+			<p><strong>O(log n)</strong></p>
+			<p>O HashSet armazena os numeros vistos. O numero de valores distintos na sequencia antes do ciclo e O(log n).</p>
+		</div>
+	</div>
+
+	<div class="code-section">
+		<h3>&#x1F4BB; Implementacao em C#</h3>
+		<pre>
+<span style="color:#569cd6;">public bool</span> <span style="color:#dcdcaa;">IsHappy</span>(<span style="color:#569cd6;">int</span> n)
+{
+    <span style="color:#c586c0;">var</span> map = <span style="color:#c586c0;">new</span> HashSet&lt;<span style="color:#569cd6;">int</span>&gt;();
+
+    <span style="color:#c586c0;">while</span> (!map.Contains(n))
+    {
+        map.Add(n);
+        <span style="color:#c586c0;">var</span> newValue = <span style="color:#b5cea8;">0</span>;
+        <span style="color:#c586c0;">while</span> (n &gt; <span style="color:#b5cea8;">0</span>)
+        {
+            <span style="color:#c586c0;">var</span> digit = n % <span style="color:#b5cea8;">10</span>;        <span style="color:#6a9955;">// ultimo digito</span>
+            newValue += digit * digit;   <span style="color:#6a9955;">// acumula digito²</span>
+            n /= <span style="color:#b5cea8;">10</span>;                  <span style="color:#6a9955;">// remove ultimo digito</span>
+        }
+        <span style="color:#c586c0;">if</span> (newValue == <span style="color:#b5cea8;">1</span>) <span style="color:#c586c0;">return true</span>;   <span style="color:#6a9955;">// feliz!</span>
+        n = newValue;
+    }
+    <span style="color:#c586c0;">return false</span>;  <span style="color:#6a9955;">// ciclo detectado</span>
+}</pre>
+	</div>
+</div>
+<script>
+// ─── Test: IsHappyTest — n=19 → true ───
+// 19 → 1²+9²=82 → 8²+2²=68 → 6²+8²=100 → 1²+0²+0²=1 → HAPPY!
+
+const STEPS = [
+	{phase:'init', n:19, map:[], digits:null, sum:null, iter:0, result:null,
+	 event:'Inicio: n=19, map={}. Entrar no loop while(!map.Contains(n)).'},
+	{phase:'add', n:19, map:[19], digits:null, sum:null, iter:1, result:null,
+	 event:'19 nao esta em map. map.Add(19). map={19}.'},
+	{phase:'compute', n:19, map:[19], digits:[{d:1,sq:1},{d:9,sq:81}], sum:82, iter:1, result:null,
+	 event:'Calcular: d=9 → 9²=81, d=1 → 1²=1. newValue=82. 82≠1 → continuar. n=82.'},
+	{phase:'add', n:82, map:[19,82], digits:null, sum:null, iter:2, result:null,
+	 event:'82 nao esta em map. map.Add(82). map={19,82}.'},
+	{phase:'compute', n:82, map:[19,82], digits:[{d:8,sq:64},{d:2,sq:4}], sum:68, iter:2, result:null,
+	 event:'Calcular: d=2 → 2²=4, d=8 → 8²=64. newValue=68. 68≠1 → continuar. n=68.'},
+	{phase:'add', n:68, map:[19,82,68], digits:null, sum:null, iter:3, result:null,
+	 event:'68 nao esta em map. map.Add(68). map={19,82,68}.'},
+	{phase:'compute', n:68, map:[19,82,68], digits:[{d:6,sq:36},{d:8,sq:64}], sum:100, iter:3, result:null,
+	 event:'Calcular: d=8 → 8²=64, d=6 → 6²=36. newValue=100. 100≠1 → continuar. n=100.'},
+	{phase:'add', n:100, map:[19,82,68,100], digits:null, sum:null, iter:4, result:null,
+	 event:'100 nao esta em map. map.Add(100). map={19,82,68,100}.'},
+	{phase:'happy', n:100, map:[19,82,68,100], digits:[{d:1,sq:1},{d:0,sq:0},{d:0,sq:0}], sum:1, iter:4, result:null,
+	 event:'🎉 Calcular: d=0→0, d=0→0, d=1→1²=1. newValue=1. newValue==1 → return true!'},
+	{phase:'done', n:1, map:[19,82,68,100], digits:null, sum:null, iter:4, result:true,
+	 event:'✅ IsHappy(19) = true. 19 e um numero feliz! Sequencia: 19→82→68→100→1.'},
+];
+
+// History rows accumulated
+const historyRows = [];
+
+let stepIdx=0, isRunning=false, intervalId=null;
+
+function renderDigits(digits, sum, isHappy) {
+	const row = document.getElementById('digitsRow');
+	if (!digits) { row.innerHTML = '<span style="color:#9ca3af;font-size:13px;">Aguardando calculo...</span>'; return; }
+	row.innerHTML = '';
+	digits.forEach((item, i) => {
+		const box = document.createElement('div');
+		box.className = 'digit-box';
+		box.innerHTML = `<div class="digit-val">${item.d}</div><div class="digit-sq">${item.d}²=${item.sq}</div>`;
+		row.appendChild(box);
+		if (i < digits.length-1) {
+			const plus = document.createElement('div'); plus.className='plus-sign'; plus.textContent='+'; row.appendChild(plus);
+		}
+	});
+	const eq = document.createElement('div'); eq.className='equals-sign'; eq.textContent='='; row.appendChild(eq);
+	const sumBox = document.createElement('div'); sumBox.className='sum-box';
+	sumBox.innerHTML = `<div class="sum-val ${isHappy?'happy':'normal'}">${sum}</div><div class="sum-label">nova soma</div>`;
+	row.appendChild(sumBox);
+}
+
+function renderHashSet(map, newN) {
+	const el = document.getElementById('hashPills');
+	if (map.length === 0) { el.innerHTML='<span style="color:#9ca3af;font-size:13px;">Vazio</span>'; return; }
+	el.innerHTML='';
+	map.forEach((v, i) => {
+		const pill = document.createElement('span');
+		pill.className = 'hashset-pill' + (i===map.length-1?' new':'');
+		pill.textContent = v;
+		el.appendChild(pill);
+	});
+}
+
+function addHistoryRow(iter, n, digits, sum, isHappy) {
+	if (!digits) return;
+	const calcStr = digits.map(d=>`${d.d}²`).join('+') + `=${sum}`;
+	historyRows.push({iter, n, calcStr, sum, isHappy});
+	rebuildHistTable();
+}
+
+function rebuildHistTable() {
+	const tbody = document.getElementById('histBody');
+	tbody.innerHTML='';
+	historyRows.forEach((row, i) => {
+		const tr = document.createElement('tr');
+		tr.className = row.isHappy ? 'happy-row' : (i===historyRows.length-1 ? 'active-row' : '');
+		tr.innerHTML = `<td>${row.iter}</td><td>${row.n}</td><td>${row.calcStr}</td><td>${row.isHappy?'🎉 '+row.sum:row.sum}</td>`;
+		tbody.appendChild(tr);
+	});
+}
+
+function renderStep(s) {
+	const isHappy = s.phase === 'happy' || s.phase === 'done';
+
+	// N display
+	const nd = document.getElementById('nDisplay');
+	nd.textContent = s.n;
+	nd.className = 'n-display' + (isHappy && s.sum===1 ? ' happy' : '');
+
+	// Compute section
+	renderDigits(s.digits, s.sum, isHappy && s.sum===1);
+
+	// HashSet
+	renderHashSet(s.map, s.n);
+
+	// History (add row when we have computation)
+	if (s.phase==='compute' || s.phase==='happy') {
+		// avoid duplicates
+		if (!historyRows.find(r=>r.n===s.n && r.sum===s.sum)) {
+			addHistoryRow(s.iter, s.n, s.digits, s.sum, s.sum===1);
+		} else { rebuildHistTable(); }
+	} else { rebuildHistTable(); }
+
+	document.getElementById('eventLog').textContent = s.event;
+	document.getElementById('statN').textContent = s.n;
+	document.getElementById('statIter').textContent = s.iter;
+	document.getElementById('statMap').textContent = s.map.length;
+	document.getElementById('statResult').textContent = s.result===null ? '—' : (s.result?'✅ true':'❌ false');
+
+	const smap = {init:1, add:2, compute:3, happy:4, done:4};
+	for (let i=1;i<=5;i++) document.getElementById(`step${i}`).classList.remove('active');
+	if (smap[s.phase]) document.getElementById(`step${smap[s.phase]}`).classList.add('active');
+}
+
+function advance() {
+	if (stepIdx>=STEPS.length-1) {
+		renderStep(STEPS[STEPS.length-1]); clearInterval(intervalId); isRunning=false;
+		document.getElementById('startBtn').disabled=false; document.getElementById('pauseBtn').disabled=true; return;
+	}
+	stepIdx++; renderStep(STEPS[stepIdx]);
+}
+function startVisualization() {
+	if (stepIdx>=STEPS.length-1) resetVisualization();
+	isRunning=true; document.getElementById('startBtn').disabled=true; document.getElementById('pauseBtn').disabled=false;
+	intervalId = setInterval(advance, parseInt(document.getElementById('speedRange').value));
+}
+function pauseVisualization() {
+	isRunning=false; clearInterval(intervalId);
+	document.getElementById('startBtn').disabled=false; document.getElementById('pauseBtn').disabled=true;
+}
+function doStep() {
+	if (stepIdx>=STEPS.length-1) { resetVisualization(); return; }
+	if (isRunning) pauseVisualization(); advance();
+}
+function resetVisualization() {
+	clearInterval(intervalId); isRunning=false; stepIdx=0;
+	historyRows.length=0;
+	document.getElementById('startBtn').disabled=false; document.getElementById('pauseBtn').disabled=true;
+	renderStep(STEPS[0]);
+}
+document.getElementById('speedRange').addEventListener('input', function() {
+	document.getElementById('speedValue').textContent = this.value+'ms';
+	if (isRunning) { clearInterval(intervalId); intervalId=setInterval(advance,parseInt(this.value)); }
+});
+window.onload = function() { renderStep(STEPS[0]); };
+</script>
+</body>
+</html>

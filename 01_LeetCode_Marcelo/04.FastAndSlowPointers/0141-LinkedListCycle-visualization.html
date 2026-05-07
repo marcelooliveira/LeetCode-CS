@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Visualizacao: 0141 - Linked List Cycle</title>
+	<style>
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+			padding: 20px; min-height: 100vh;
+		}
+		.container {
+			max-width: 1100px; margin: 0 auto; background: white;
+			border-radius: 20px; padding: 30px;
+			box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+		}
+		h1 { color: #7c3aed; text-align: center; margin-bottom: 8px; font-size: 2.1em; }
+		.subtitle { text-align: center; color: #666; margin-bottom: 26px; font-size: 1.05em; }
+		.explanation {
+			background: #f5f3ff; padding: 20px; border-radius: 10px;
+			margin-bottom: 26px; border-left: 5px solid #7c3aed;
+		}
+		.explanation h2 { color: #7c3aed; margin-bottom: 12px; }
+		.explanation p { line-height: 1.8; color: #333; margin-bottom: 8px; }
+		.explanation code {
+			background: #ede9fe; padding: 2px 6px; border-radius: 3px;
+			font-family: 'Courier New', monospace; color: #5b21b6;
+		}
+		.controls {
+			display: flex; gap: 12px; margin-bottom: 26px;
+			flex-wrap: wrap; justify-content: center; align-items: center;
+		}
+		button {
+			background: #7c3aed; color: white; border: none;
+			padding: 11px 20px; border-radius: 8px; cursor: pointer;
+			font-size: 15px; font-weight: 600; transition: all 0.25s;
+			box-shadow: 0 4px 12px rgba(124,58,237,0.4);
+		}
+		button:hover { background: #6d28d9; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(124,58,237,0.55); }
+		button:disabled { background: #d1d5db; cursor: not-allowed; transform: none; box-shadow: none; }
+		button#stepBtn { background: #a855f7; box-shadow: 0 4px 12px rgba(168,85,247,0.4); }
+		button#stepBtn:hover { background: #9333ea; }
+		button#stepBtn:disabled { background: #d1d5db; box-shadow: none; }
+		.speed-control { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #374151; }
+		input[type="range"] { width: 130px; accent-color: #7c3aed; }
+
+		.visualization {
+			background: #fafafa; padding: 22px 20px 18px;
+			border-radius: 12px; margin-bottom: 22px; border: 2px solid #ddd6fe;
+		}
+		.visualization h3 { text-align: center; color: #7c3aed; margin-bottom: 14px; }
+		.legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px; }
+		.legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; }
+		.legend-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid transparent; flex-shrink: 0; }
+
+		#mainCanvas { display: block; margin: 0 auto 18px; border-radius: 8px; background: white; border: 1px solid #e2e8f0; }
+
+		.pointer-row {
+			display: flex; gap: 16px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap;
+		}
+		.pointer-card {
+			background: white; border-radius: 10px; border: 2px solid; padding: 12px 18px;
+			text-align: center; min-width: 120px;
+		}
+		.ptr-label { font-size: 12px; margin-bottom: 6px; }
+		.ptr-value { font-size: 18px; font-weight: 800; font-family: 'Courier New', monospace; }
+
+		.event-log {
+			padding: 12px 16px; background: #f5f3ff;
+			border-radius: 8px; border-left: 4px solid #7c3aed;
+			font-size: 14px; color: #4c1d95; min-height: 44px; line-height: 1.55;
+			margin-top: 12px;
+		}
+		.stats {
+			display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+			gap: 14px; margin-bottom: 22px;
+		}
+		.stat-card {
+			background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+			color: white; padding: 16px; border-radius: 12px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		}
+		.stat-label { font-size: 12px; opacity: 0.85; margin-bottom: 5px; }
+		.stat-value { font-size: 20px; font-weight: bold; font-family: 'Courier New', monospace; }
+
+		.algorithm-steps { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 22px; }
+		.algorithm-steps h3 { color: #7c3aed; margin-bottom: 14px; }
+		.step {
+			padding: 11px 15px; margin-bottom: 8px; border-radius: 8px;
+			background: white; border-left: 4px solid #e5e7eb;
+			transition: all 0.3s; font-size: 14px; line-height: 1.55;
+		}
+		.step.active { border-left-color: #7c3aed; background: #f5f3ff; transform: translateX(5px); }
+		.step-number {
+			display: inline-block; width: 26px; height: 26px; background: #7c3aed;
+			color: white; border-radius: 50%; text-align: center; line-height: 26px;
+			margin-right: 10px; font-weight: bold; font-size: 13px;
+		}
+		.complexity-info { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+		.complexity-card { background: #f5f3ff; padding: 18px; border-radius: 10px; border-left: 5px solid #7c3aed; }
+		.complexity-card h3 { color: #7c3aed; margin-bottom: 8px; }
+		.complexity-card p { line-height: 1.7; color: #374151; }
+		.code-section { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px; overflow-x: auto; }
+		.code-section h3 { color: #d4d4d4; margin-bottom: 14px; }
+		.code-section pre { font-family: 'Courier New', monospace; line-height: 1.75; font-size: 13px; }
+		@media (max-width: 700px) {
+			h1 { font-size: 1.5em; }
+			.complexity-info { grid-template-columns: 1fr; }
+			#mainCanvas { width: 100% !important; }
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+	<h1>🔗 Linked List Cycle</h1>
+	<p class="subtitle">Ponteiros Lento e Rapido (Floyd's Tortoise &amp; Hare) &mdash; LeetCode 0141</p>
+
+	<div class="explanation">
+		<h2>📖 Qual e o Problema?</h2>
+		<p>
+			Dada a cabeca de uma lista ligada, determinar se ela contem um ciclo.
+			Um ciclo existe quando algum no aponta de volta para um no anterior.
+		</p>
+		<p>
+			Este visualizador usa <code>HasCycle_1</code>:
+			<br>
+			lista = [3, 2, 0, -4], com <code>node[-4].next &rarr; node[2]</code> (val=2).
+			<br>
+			Resultado esperado: <strong>true</strong>
+		</p>
+		<p>
+			<strong>slow</strong> comeca em <code>head</code>, <strong>fast</strong> comeca em <code>head.next</code>.
+			fast avanca 2 nos por iteracao; slow avanca 1. Se ha ciclo, eles necessariamente se encontram.
+		</p>
+	</div>
+
+	<div class="controls">
+		<button id="startBtn" onclick="startVisualization()">&#9654;&#65039; Iniciar</button>
+		<button id="pauseBtn" onclick="pauseVisualization()" disabled>&#9208;&#65039; Pausar</button>
+		<button id="stepBtn"  onclick="doStep()">&#9197;&#65039; Passo</button>
+		<button id="resetBtn" onclick="resetVisualization()">&#128260; Resetar</button>
+		<div class="speed-control">
+			<label for="speedRange">Velocidade:</label>
+			<input type="range" id="speedRange" min="300" max="2500" value="900" step="100">
+			<span id="speedValue">900ms</span>
+		</div>
+	</div>
+
+	<div class="visualization">
+		<h3>Lista Ligada com Ciclo &nbsp;|&nbsp; slow &#x1F422; e fast &#x1F407;</h3>
+		<div class="legend">
+			<div class="legend-item"><div class="legend-dot" style="background:#ede9fe;border-color:#7c3aed;"></div>slow &#x1F422;</div>
+			<div class="legend-item"><div class="legend-dot" style="background:#fdf4ff;border-color:#c026d3;"></div>fast &#x1F407;</div>
+			<div class="legend-item"><div class="legend-dot" style="background:#d1fae5;border-color:#10b981;"></div>Encontro!</div>
+			<div class="legend-item"><div class="legend-dot" style="background:#f0f9ff;border-color:#0ea5e9;"></div>Entrada do ciclo</div>
+		</div>
+
+		<canvas id="mainCanvas" width="640" height="215"></canvas>
+
+		<div class="pointer-row">
+			<div class="pointer-card" style="border-color:#7c3aed;">
+				<div class="ptr-label" style="color:#7c3aed;">&#x1F422; slow</div>
+				<div class="ptr-value" id="slowVal" style="color:#7c3aed;">—</div>
+			</div>
+			<div class="pointer-card" style="border-color:#c026d3;">
+				<div class="ptr-label" style="color:#c026d3;">&#x1F407; fast</div>
+				<div class="ptr-value" id="fastVal" style="color:#c026d3;">—</div>
+			</div>
+			<div class="pointer-card" id="meetCard" style="border-color:#d1d5db;">
+				<div class="ptr-label" id="meetLabel" style="color:#6b7280;">Encontro</div>
+				<div class="ptr-value" id="meetVal" style="color:#6b7280;">—</div>
+			</div>
+		</div>
+
+		<div class="event-log" id="eventLog">Clique em "Iniciar" ou "Passo" para comecar...</div>
+	</div>
+
+	<div class="stats">
+		<div class="stat-card">
+			<div class="stat-label">Fase</div>
+			<div class="stat-value" id="statPhase">—</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">Iteracao</div>
+			<div class="stat-value" id="statIter">0</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">slow.val</div>
+			<div class="stat-value" id="statSlow">—</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-label">fast.val</div>
+			<div class="stat-value" id="statFast">—</div>
+		</div>
+	</div>
+
+	<div class="algorithm-steps">
+		<h3>&#x1F50D; Passos do Algoritmo</h3>
+		<div class="step" id="step1">
+			<span class="step-number">1</span>
+			<strong>Verificacao inicial:</strong> se <code>head == null || head.next == null</code> &rarr; retorna <code>false</code> imediatamente.
+		</div>
+		<div class="step" id="step2">
+			<span class="step-number">2</span>
+			<strong>Inicializar:</strong> <code>slow = head</code>, <code>fast = head.next</code>. Entrar em <code>while(slow != fast)</code>.
+		</div>
+		<div class="step" id="step3">
+			<span class="step-number">3</span>
+			<strong>Checar terminacao:</strong> se <code>fast == null || fast.next == null</code> &rarr; lista finita, sem ciclo &rarr; retorna <code>false</code>.
+		</div>
+		<div class="step" id="step4">
+			<span class="step-number">4</span>
+			<strong>Avancar:</strong> <code>slow = slow.next</code> (+1), <code>fast = fast.next.next</code> (+2). fast se aproxima do slow pelo ciclo.
+		</div>
+		<div class="step" id="step5">
+			<span class="step-number">5</span>
+			<strong>Encontro!</strong> <code>slow == fast</code> &rarr; eles se encontraram dentro do ciclo &rarr; retorna <code>true</code>.
+		</div>
+	</div>
+
+	<div class="complexity-info">
+		<div class="complexity-card">
+			<h3>&#x23F1;&#xFE0F; Complexidade de Tempo</h3>
+			<p><strong>O(n)</strong></p>
+			<p>Se ha ciclo de comprimento &lambda; e cauda de comprimento &mu;, o encontro ocorre em no maximo &mu; + &lambda; passos.</p>
+		</div>
+		<div class="complexity-card">
+			<h3>&#x1F4BE; Complexidade de Espaco</h3>
+			<p><strong>O(1)</strong></p>
+			<p>Apenas dois ponteiros extras (slow e fast) — constante, independente do tamanho da lista.</p>
+		</div>
+	</div>
+
+	<div class="code-section">
+		<h3>&#x1F4BB; Implementacao em C#</h3>
+		<pre>
+<span style="color:#569cd6;">public bool</span> <span style="color:#dcdcaa;">HasCycle</span>(ListNode head)
+{
+    <span style="color:#c586c0;">if</span> (head == <span style="color:#569cd6;">null</span> || head.next == <span style="color:#569cd6;">null</span>) <span style="color:#c586c0;">return false</span>;
+
+    ListNode slow = head, fast = head.next;
+    <span style="color:#c586c0;">while</span> (slow != fast)
+    {
+        <span style="color:#c586c0;">if</span> (fast == <span style="color:#569cd6;">null</span> || fast.next == <span style="color:#569cd6;">null</span>) <span style="color:#c586c0;">return false</span>;
+        slow = slow.next;
+        fast = fast.next.next;   <span style="color:#6a9955;">// fast avanca 2x mais rapido</span>
+    }
+    <span style="color:#c586c0;">return true</span>;              <span style="color:#6a9955;">// slow == fast: encontro no ciclo</span>
+}</pre>
+	</div>
+</div>
+<script>
+// ─── Test: HasCycle_1 ───
+// List: 3 → 2 → 0 → -4 → (back to node[1], val=2)
+// slow starts at node[0](val=3), fast starts at node[1](val=2)
+// Iteration 1: slow→node[1](2), fast→node[3](-4)
+// Iteration 2: slow→node[2](0), fast→node[3].next.next=node[2](0)  MEET!
+
+const R = 28;
+const NODES = [
+	{val:  3, x:  85, y: 108},  // node[0]
+	{val:  2, x: 228, y: 108},  // node[1] ← cycle entry
+	{val:  0, x: 371, y: 108},  // node[2]
+	{val: -4, x: 514, y: 108},  // node[3]
+];
+
+// Pre-computed animation steps
+// slow/fast = node indices (0..3)
+const STEPS = [
+	{slow:0, fast:1, iter:0, phase:'init', meeting:false, result:null,
+	 event:'Inicio: head=[3,2,0,-4] com ciclo node[-4]→node[2]. slow=head(val=3), fast=head.next(val=2).'},
+	{slow:0, fast:1, iter:0, phase:'check', meeting:false, result:null,
+	 event:'while(slow≠fast): node[0](val=3) ≠ node[1](val=2) → verdadeiro. Verificar fast≠null e fast.next≠null...'},
+	{slow:0, fast:1, iter:0, phase:'null_ok', meeting:false, result:null,
+	 event:'fast(val=2)≠null, fast.next(val=0)≠null → avancar ponteiros.'},
+	{slow:1, fast:3, iter:1, phase:'moved', meeting:false, result:null,
+	 event:'Iter 1: slow=slow.next → node[1](val=2). fast=fast.next.next → node[3](val=-4).'},
+	{slow:1, fast:3, iter:1, phase:'check', meeting:false, result:null,
+	 event:'while(slow≠fast): node[1](val=2) ≠ node[3](val=-4) → verdadeiro. Verificar fast...'},
+	{slow:1, fast:3, iter:1, phase:'null_ok', meeting:false, result:null,
+	 event:'fast(val=-4)≠null, fast.next(ciclo!→val=2)≠null → avancar ponteiros.'},
+	{slow:2, fast:2, iter:2, phase:'meet', meeting:true, result:null,
+	 event:'🎯 Iter 2: slow→node[2](val=0). fast=node[3].next.next=node[1].next=node[2](val=0). slow==fast! EXIT loop.'},
+	{slow:2, fast:2, iter:2, phase:'done', meeting:true, result:true,
+	 event:'✅ HasCycle = true. slow e fast se encontraram em node[2](val=0) dentro do ciclo.'},
+];
+
+let stepIdx = 0, isRunning = false, intervalId = null;
+
+// ─── Drawing helpers ───
+function arrow(ctx, sx, sy, ex, ey, color, lw) {
+	const a = Math.atan2(ey-sy, ex-sx), hl = 9;
+	ctx.save();
+	ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw;
+	ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+	ctx.beginPath();
+	ctx.moveTo(ex, ey);
+	ctx.lineTo(ex-hl*Math.cos(a-Math.PI/6), ey-hl*Math.sin(a-Math.PI/6));
+	ctx.lineTo(ex-hl*Math.cos(a+Math.PI/6), ey-hl*Math.sin(a+Math.PI/6));
+	ctx.closePath(); ctx.fill();
+	ctx.restore();
+}
+
+function quadArrow(ctx, sx, sy, cpx, cpy, ex, ey, color, lw) {
+	const a = Math.atan2(ey-cpy, ex-cpx), hl = 9;
+	ctx.save();
+	ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw;
+	ctx.setLineDash([]);
+	ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(cpx, cpy, ex, ey); ctx.stroke();
+	ctx.beginPath();
+	ctx.moveTo(ex, ey);
+	ctx.lineTo(ex-hl*Math.cos(a-Math.PI/6), ey-hl*Math.sin(a-Math.PI/6));
+	ctx.lineTo(ex-hl*Math.cos(a+Math.PI/6), ey-hl*Math.sin(a+Math.PI/6));
+	ctx.closePath(); ctx.fill();
+	ctx.restore();
+}
+
+function drawCanvas(s) {
+	const canvas = document.getElementById('mainCanvas');
+	const ctx = canvas.getContext('2d');
+	ctx.clearRect(0, 0, 640, 215);
+
+	// Background note
+	ctx.font = '12px Segoe UI'; ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center';
+	ctx.fillText('Teste HasCycle_1: lista [3→2→0→-4], com node[-4].next → node[val=2]', 320, 14);
+
+	// Forward arrows (node[0]→[1]→[2]→[3])
+	for (let i = 0; i < 3; i++) {
+		const from = NODES[i], to = NODES[i+1];
+		arrow(ctx, from.x+R, from.y, to.x-R, to.y, '#c4b5fd', 2);
+	}
+
+	// Cycle back arc: node[3](514,136) → bezier down → node[1](228,136)
+	quadArrow(ctx, 514, 108+R, 371, 195, 228, 108+R, '#8b5cf6', 2.5);
+
+	// Cycle label
+	ctx.font = '12px Segoe UI'; ctx.fillStyle = '#6d28d9'; ctx.textAlign = 'center';
+	ctx.fillText('↩ ciclo (volta para node[1])', 371, 208);
+
+	// Cycle entry marker
+	ctx.font = '11px Segoe UI'; ctx.fillStyle = '#0284c7'; ctx.textAlign = 'center';
+	ctx.fillText('entrada do ciclo', 228, 54);
+	ctx.beginPath(); ctx.moveTo(228, 62); ctx.lineTo(228, 77);
+	ctx.strokeStyle = '#0284c7'; ctx.lineWidth = 1.5; ctx.stroke();
+
+	// Draw nodes
+	NODES.forEach((node, i) => {
+		const isSlow = s.slow === i;
+		const isFast = s.fast === i;
+		const isMeet = s.meeting && s.slow === i;
+
+		let fill, stroke, lw;
+		if (isMeet)              { fill='#d1fae5'; stroke='#10b981'; lw=4.5; }
+		else if (isSlow && isFast){ fill='#fef9c3'; stroke='#f59e0b'; lw=4; }
+		else if (isSlow)         { fill='#ede9fe'; stroke='#7c3aed'; lw=3.5; }
+		else if (isFast)         { fill='#fdf4ff'; stroke='#c026d3'; lw=3.5; }
+		else if (i === 1)        { fill='#f0f9ff'; stroke='#7dd3fc'; lw=2; }
+		else                     { fill='#f9fafb'; stroke='#9ca3af'; lw=2; }
+
+		ctx.beginPath();
+		ctx.arc(node.x, node.y, R, 0, Math.PI*2);
+		ctx.fillStyle = fill; ctx.fill();
+		ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke();
+
+		ctx.fillStyle = '#1f2937'; ctx.font = 'bold 17px Segoe UI';
+		ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+		ctx.fillText(node.val, node.x, node.y);
+
+		// Index label below
+		ctx.font = '10px Segoe UI'; ctx.fillStyle = '#9ca3af'; ctx.textBaseline = 'top';
+		ctx.fillText(`[${i}]`, node.x, node.y + R + 4);
+
+		// Pointer labels above
+		ctx.textBaseline = 'bottom';
+		if (isMeet) {
+			ctx.font = 'bold 12px Segoe UI'; ctx.fillStyle = '#059669';
+			ctx.fillText('🐢🐇 ENCONTRO!', node.x, node.y - R - 2);
+		} else {
+			const labels = [];
+			if (isSlow) labels.push('🐢 slow');
+			if (isFast) labels.push('🐇 fast');
+			if (labels.length) {
+				ctx.font = 'bold 12px Segoe UI';
+				ctx.fillStyle = (isFast && !isSlow) ? '#a21caf' : '#6d28d9';
+				ctx.fillText(labels.join('+'), node.x, node.y - R - 2);
+			}
+		}
+	});
+}
+
+function renderStep(s) {
+	drawCanvas(s);
+	document.getElementById('slowVal').textContent = `val=${NODES[s.slow].val}`;
+	document.getElementById('fastVal').textContent = `val=${NODES[s.fast].val}`;
+	if (s.meeting) {
+		document.getElementById('meetCard').style.borderColor = '#10b981';
+		document.getElementById('meetLabel').style.color = '#059669';
+		document.getElementById('meetVal').style.color = '#059669';
+		document.getElementById('meetVal').textContent = `val=${NODES[s.slow].val}`;
+	} else {
+		document.getElementById('meetCard').style.borderColor = '#d1d5db';
+		document.getElementById('meetLabel').style.color = '#6b7280';
+		document.getElementById('meetVal').style.color = '#6b7280';
+		document.getElementById('meetVal').textContent = '—';
+	}
+	document.getElementById('eventLog').textContent = s.event;
+	document.getElementById('statIter').textContent = s.iter;
+	document.getElementById('statSlow').textContent = NODES[s.slow].val;
+	document.getElementById('statFast').textContent = NODES[s.fast].val;
+	const pmap = {init:'Init',check:'Loop check',null_ok:'Null check',moved:'Movendo',meet:'ENCONTRO!',done:'Concluido'};
+	document.getElementById('statPhase').textContent = s.result !== null ? (s.result ? '✅ true' : '❌ false') : (pmap[s.phase]||s.phase);
+	const smap = {init:2,check:2,null_ok:3,moved:4,meet:5,done:5};
+	for (let i=1;i<=5;i++) document.getElementById(`step${i}`).classList.remove('active');
+	if (smap[s.phase]) document.getElementById(`step${smap[s.phase]}`).classList.add('active');
+}
+
+function advance() {
+	if (stepIdx >= STEPS.length-1) {
+		renderStep(STEPS[STEPS.length-1]); clearInterval(intervalId); isRunning=false;
+		document.getElementById('startBtn').disabled=false; document.getElementById('pauseBtn').disabled=true; return;
+	}
+	stepIdx++; renderStep(STEPS[stepIdx]);
+}
+function startVisualization() {
+	if (stepIdx >= STEPS.length-1) resetVisualization();
+	isRunning=true; document.getElementById('startBtn').disabled=true; document.getElementById('pauseBtn').disabled=false;
+	intervalId = setInterval(advance, parseInt(document.getElementById('speedRange').value));
+}
+function pauseVisualization() {
+	isRunning=false; clearInterval(intervalId);
+	document.getElementById('startBtn').disabled=false; document.getElementById('pauseBtn').disabled=true;
+}
+function doStep() {
+	if (stepIdx >= STEPS.length-1) { resetVisualization(); return; }
+	if (isRunning) pauseVisualization(); advance();
+}
+function resetVisualization() {
+	clearInterval(intervalId); isRunning=false; stepIdx=0;
+	document.getElementById('startBtn').disabled=false; document.getElementById('pauseBtn').disabled=true;
+	renderStep(STEPS[0]);
+}
+document.getElementById('speedRange').addEventListener('input', function() {
+	document.getElementById('speedValue').textContent = this.value+'ms';
+	if (isRunning) { clearInterval(intervalId); intervalId=setInterval(advance,parseInt(this.value)); }
+});
+window.onload = function() { renderStep(STEPS[0]); };
+</script>
+</body>
+</html>
