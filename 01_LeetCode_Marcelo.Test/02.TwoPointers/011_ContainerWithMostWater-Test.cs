@@ -30,12 +30,12 @@ namespace LeetCode.Test
         [TestMethod]
         public void MaxAreaTest_General_3()
         {
-            int[] input = { 9, 8, 7, 6, 5, 4, 3, 2, 1 };
+            int[] input = { 1, 8, 6, 2, 5, 4, 8, 3, 7 };
 
             var solution = new _011_ContainerWithMostWater();
             var result = solution.MaxArea(input);
 
-            Assert.AreEqual(20, result);
+            Assert.AreEqual(49, result);
         }
     }
 }

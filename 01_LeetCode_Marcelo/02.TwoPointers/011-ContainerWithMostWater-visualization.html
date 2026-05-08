@@ -105,6 +105,31 @@
 			pointer-events: none;
 		}
 
+		/* water level line */
+		.water-level-line {
+			position: absolute;
+			height: 0;
+			border-top: 2px dashed #f97316;
+			z-index: 10;
+			display: none;
+			pointer-events: none;
+			transition: bottom 0.3s;
+		}
+		.water-level-line::after {
+			content: attr(data-level);
+			position: absolute;
+			left: 0;
+			top: -20px;
+			font-size: 11px;
+			color: #f97316;
+			font-weight: 700;
+			background: white;
+			padding: 1px 5px;
+			border-radius: 3px;
+			border: 1px solid #f97316;
+			white-space: nowrap;
+		}
+
 		.ptr-label {
 			font-size: 11px; font-weight: 700;
 			height: 20px; line-height: 20px;
@@ -201,11 +226,11 @@
 			parede mais curta.
 		</p>
 		<p>
-			Este visualizador usa o teste <code>MaxAreaTest_General_2</code>:
+			Este visualizador usa o exemplo oficial do LeetCode:
 			<br>
-			<strong>height = [1, 2, 3, 4, 5, 6, 7, 8, 9]</strong>
-			&nbsp;&rarr;&nbsp; <strong>Resultado esperado: 20</strong>
-			&nbsp;(paredes de altura 4 e 9, largura 5)
+			<strong>height = [1, 8, 6, 2, 5, 4, 8, 3, 7]</strong>
+			&nbsp;&rarr;&nbsp; <strong>Resultado esperado: 49</strong>
+			&nbsp;(paredes de altura 7 e 8, indices 1 e 8, largura 7)
 		</p>
 		<p>
 			A solucao usa <strong>Two Pointers</strong>: <em>left</em> começa na extremidade esquerda
@@ -229,12 +254,13 @@
 
 	<!-- Visualization -->
 	<div class="visualization">
-		<h3>height = [1, 2, 3, 4, 5, 6, 7, 8, 9]</h3>
+		<h3>height = [1, 8, 6, 2, 5, 4, 8, 3, 7]</h3>
 		<div class="legend">
 			<div class="legend-item"><div class="legend-box" style="background:#06b6d4;"></div>Ponteiro esquerdo (left)</div>
 			<div class="legend-item"><div class="legend-box" style="background:#3b82f6;"></div>Ponteiro direito (right)</div>
 			<div class="legend-item"><div class="legend-box" style="background:rgba(6,182,212,0.25);border-color:#06b6d4;border-style:dashed;"></div>Area de agua calculada</div>
 			<div class="legend-item"><div class="legend-box" style="background:#22c55e;"></div>Melhor container encontrado</div>
+			<div class="legend-item"><div class="legend-box" style="background:white;border:2px dashed #f97316;"></div>Nivel da agua (linha tracejada)</div>
 		</div>
 
 		<div class="chart-area" id="chartArea"></div>
@@ -349,7 +375,7 @@
 
 </div>
 <script>
-const HEIGHT = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const HEIGHT = [1, 8, 6, 2, 5, 4, 8, 3, 7];
 const MAX_H  = Math.max(...HEIGHT);
 const BAR_H  = 220; // px for max height
 
@@ -402,6 +428,10 @@ function px(h) { return Math.round((h / MAX_H) * BAR_H); }
 function buildDOM() {
 	const area = document.getElementById('chartArea');
 	area.innerHTML = '';
+	const wll = document.createElement('div');
+	wll.id = 'waterLevelLine';
+	wll.className = 'water-level-line';
+	area.appendChild(wll);
 	HEIGHT.forEach((h, i) => {
 		const col = document.createElement('div');
 		col.className = 'bar-col';
@@ -511,6 +541,28 @@ function renderStep(s) {
 		document.getElementById('infoMinH').textContent  = minH;
 		document.getElementById('infoWidth').textContent = w;
 		document.getElementById('waterFormula').textContent = `area = ${minH} × ${w} = ${s.area}`;
+	}
+
+	// Water level line
+	const wll = document.getElementById('waterLevelLine');
+	if (s.phase === 'calc') {
+		const minH      = Math.min(HEIGHT[s.left], HEIGHT[s.right]);
+		const chartEl   = document.getElementById('chartArea');
+		const refBar    = document.getElementById('bar-0');
+		const leftBar   = document.getElementById(`bar-${s.left}`);
+		const rightBar  = document.getElementById(`bar-${s.right}`);
+		const chartRect = chartEl.getBoundingClientRect();
+		const refRect   = refBar.getBoundingClientRect();
+		const leftRect  = leftBar.getBoundingClientRect();
+		const rightRect = rightBar.getBoundingClientRect();
+		const barBase   = chartRect.bottom - refRect.bottom;
+		wll.style.left    = (leftRect.left  - chartRect.left)  + 'px';
+		wll.style.right   = (chartRect.right - rightRect.right) + 'px';
+		wll.style.bottom  = (barBase + px(minH)) + 'px';
+		wll.setAttribute('data-level', `nivel: ${minH}`);
+		wll.style.display = 'block';
+	} else {
+		wll.style.display = 'none';
 	}
 
 	document.getElementById('statLeft').textContent   = s.left;
