@@ -66,5 +66,16 @@ namespace LeetCode.Test
             result = solution.FirstMissingPositive(new int[] { 2 });
             Assert.AreEqual(1, result);
         }
+
+        [TestMethod]
+        public void FirstMissingPositiveTest_new()
+        {
+            var solution = new _041_FirstMissingPositive();
+            var result = solution.FirstMissingPositive(new int[] { -1, 4, 2, 1, 9, 10 });
+            Assert.AreEqual(3, result);
+
+            result = solution.FirstMissingPositive(new int[] { 2 });
+            Assert.AreEqual(1, result);
+        }
     }
 }

@@ -3,7 +3,7 @@
 namespace LeetCode.Test
 {
     [TestClass]
-    class _0268_MissingNumber_Test
+    public class _0268_MissingNumber_Test
     {
         [TestMethod]
         public void MissingNumberTest_1()
@@ -27,6 +27,14 @@ namespace LeetCode.Test
             var solution = new _0268_MissingNumber();
             var result = solution.MissingNumber(new int[] { 9, 6, 4, 2, 3, 5, 7, 0, 1 });
             Assert.AreEqual(8, result);
+        }
+
+        [TestMethod]
+        public void MissingNumberTest_4()
+        {
+            var solution = new _0268_MissingNumber();
+            var result = solution.MissingNumber(new int[] { 0, 1 });
+            Assert.AreEqual(2, result);
         }
     }
 }
